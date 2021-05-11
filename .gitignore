@@ -1,0 +1,6 @@
+/.cache
+/build
+/node_modules
+/storybook-static
+/env.js
+.firebase
