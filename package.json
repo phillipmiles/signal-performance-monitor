@@ -1,0 +1,90 @@
+{
+  "name": "react-web-app-bootstrap",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "_env:dev": "node scripts/setBuildEnv.js development",
+    "_env:staging": "node scripts/setBuildEnv.js staging",
+    "_env:prod": "node scripts/setBuildEnv.js production",
+    "build:dev": "npm run _env:dev && parcel src/index.html --out-dir build",
+    "build:staging": "npm run _env:staging && parcel build src/index.html --out-dir build",
+    "build:prod": "npm run _env:prod && parcel build src/index.html --out-dir build",
+    "dev": "npm run build:dev",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook",
+    "deploy:staging": "npm run build:staging && firebase deploy -P staging",
+    "deploy:prod": "npm run build:prod && firebase use prod && firebase deploy -P prod"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phillipmiles/react-web-app-bootstrap.git"
+  },
+  "keywords": [
+    "react",
+    "bootstrap",
+    "web",
+    "app"
+  ],
+  "author": "Phillip Miles",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/phillipmiles/react-web-app-bootstrap/issues"
+  },
+  "homepage": "https://github.com/phillipmiles/react-web-app-bootstrap#readme",
+  "browserslist": [
+    "> 0.25%"
+  ],
+  "dependencies": {
+    "@loadable/component": "^5.14.1",
+    "@react-native-firebase/app": "^10.6.4",
+    "@react-native-firebase/auth": "^10.6.4",
+    "@reduxjs/toolkit": "^1.5.0",
+    "@sentry/react": "^6.2.0",
+    "@sentry/tracing": "^6.2.0",
+    "axios": "^0.21.1",
+    "firebase": "^8.2.5",
+    "prop-types": "^15.7.2",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "react-redux": "^7.2.2",
+    "react-router-dom": "^5.2.0",
+    "recoil": "^0.2.0",
+    "redux": "^4.0.5",
+    "redux-thunk": "^2.3.0",
+    "services": "0.0.3",
+    "theme-ui": "^0.3.5",
+    "webfontloader": "^1.6.28"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/plugin-transform-runtime": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@babel/preset-react": "^7.12.10",
+    "@babel/preset-typescript": "^7.12.17",
+    "@storybook/addon-actions": "^6.1.14",
+    "@storybook/addon-essentials": "^6.1.14",
+    "@storybook/addon-links": "^6.1.14",
+    "@storybook/react": "^6.1.14",
+    "@testing-library/react": "^11.2.5",
+    "@types/jest": "^26.0.20",
+    "@types/theme-ui": "^0.3.7",
+    "@typescript-eslint/eslint-plugin": "^4.15.1",
+    "@typescript-eslint/parser": "^4.15.1",
+    "babel-eslint": "^10.1.0",
+    "core-js": "^3.8.3",
+    "eslint": "^7.20.0",
+    "eslint-config-prettier": "^7.2.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jest": "^24.1.3",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-plugin-react": "^7.22.0",
+    "eslint-plugin-react-hooks": "^4.2.0",
+    "jest": "^26.6.3",
+    "parcel-bundler": "^1.12.4",
+    "typescript": "^4.1.5"
+  }
+}

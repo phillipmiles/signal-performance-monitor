@@ -1,0 +1,54 @@
+import env from './env.active';
+
+const envs = {
+  development: {
+    FIREBASE_API_KEY: '',
+    FIREBASE_AUTH_DOMAIN: '',
+    FIREBASE_PROJECT_ID: '',
+    FIREBASE_STORAGE_BUCKET: '',
+    FIREBASE_MESSAGING_SENDER_ID: '',
+    FIREBASE_APP_ID: '',
+    FIREBASE_DATABASE_URL: '',
+    FIREBASE_MEASUREMENT_ID: '',
+
+    FTX_API_ENDPOINT: '',
+
+    SENTRY_DSN: '',
+
+    CONTINUE_LINK_VERIFY_EMAIL: '',
+  },
+  staging: {
+    FIREBASE_API_KEY: '',
+    FIREBASE_AUTH_DOMAIN: '',
+    FIREBASE_PROJECT_ID: '',
+    FIREBASE_STORAGE_BUCKET: '',
+    FIREBASE_MESSAGING_SENDER_ID: '',
+    FIREBASE_APP_ID: '',
+    FIREBASE_DATABASE_URL: '',
+    FIREBASE_MEASUREMENT_ID: '',
+
+    FTX_API_ENDPOINT: '',
+
+    SENTRY_DSN: '',
+
+    CONTINUE_LINK_VERIFY_EMAIL: '',
+  },
+  production: {
+    FIREBASE_API_KEY: '',
+    FIREBASE_AUTH_DOMAIN: '',
+    FIREBASE_PROJECT_ID: '',
+    FIREBASE_STORAGE_BUCKET: '',
+    FIREBASE_MESSAGING_SENDER_ID: '',
+    FIREBASE_APP_ID: '',
+    FIREBASE_DATABASE_URL: '',
+    FIREBASE_MEASUREMENT_ID: '',
+
+    FTX_API_ENDPOINT: '',
+
+    SENTRY_DSN: '',
+
+    CONTINUE_LINK_VERIFY_EMAIL: '',
+  },
+};
+
+export default envs[env];
