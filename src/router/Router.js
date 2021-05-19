@@ -16,7 +16,7 @@ const Home = loadable(() => import('../pages/Home.container.js'), {
   fallback: <ActivityIndicator />,
 });
 
-const Books = loadable(() => import('../pages/Books.container'), {
+const Market = loadable(() => import('../pages/Market.container'), {
   fallback: <ActivityIndicator />,
 });
 
@@ -83,15 +83,15 @@ const Router = () => {
       <GlobalError />
       {/* Switch will match the first valid route. */}
       <Switch>
-        <Route path={routeUrls.books}>
-          <Books />
+        <Route path={`${routeUrls.market}/:marketId`}>
+          <Market />
         </Route>
         <Route path={routeUrls.movies} type="defined">
           <Movies />
         </Route>
-        <Route path={routeUrls.booksProtected} type="private">
+        {/* <Route path={routeUrls.booksProtected} type="private">
           <Books />
-        </Route>
+        </Route> */}
         <Route path={routeUrls.login} type="public">
           <Login />
         </Route>

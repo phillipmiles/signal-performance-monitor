@@ -1,6 +1,6 @@
 const routeUrls = {
   home: '/',
-  books: '/books',
+  market: '/market',
   booksProtected: '/protected-books',
   movies: '/movies',
   login: '/login',
