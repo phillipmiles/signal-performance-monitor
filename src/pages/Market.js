@@ -13,7 +13,9 @@ import {
   LineSeries,
   ema,
   MovingAverageTooltip,
+  TrendLine,
 } from 'react-financial-charts';
+import { useCallback, useState } from 'react';
 
 const MarketView = ({
   marketId,
@@ -24,6 +26,46 @@ const MarketView = ({
   width,
   height,
 }) => {
+  const [trends, setTrends] = useState([
+    {
+      type: 'LINE',
+      selected: false,
+      start: [110, 41329.107142857145],
+      end: [158, 48078.66071428571],
+      appearance: {
+        edgeFill: '#FFFFFF',
+        edgeStroke: '#000000',
+        edgeStrokeWidth: 1,
+        r: 6,
+        strokeDasharray: 'Solid',
+        strokeStyle: '#000000',
+        strokeWidth: 1,
+      },
+    },
+    {
+      type: 'LINE',
+      selected: false,
+      // Size of x axies is from 0 to number of data points.
+      start: [0, 41329.107142857145],
+      end: [168, 48078.66071428571],
+      appearance: {
+        edgeFill: '#FFFFFF',
+        edgeStroke: '#000000',
+        edgeStrokeWidth: 1,
+        r: 6,
+        strokeDasharray: 'Solid',
+        strokeStyle: '#000000',
+        strokeWidth: 1,
+      },
+    },
+  ]);
+
+  const onDrawTrendComplete = useCallback((event, trends) => {
+    console.log('HEEERERE');
+    console.log(trends);
+    setTrends(trends);
+  }, []);
+
   const xScaleProvider = discontinuousTimeScaleProviderBuilder().inputDateAccessor(
     (d) => new Date(d.time),
   );
@@ -58,7 +100,7 @@ const MarketView = ({
   const max = xAccessor(data[data.length - 1]);
   const min = xAccessor(data[Math.max(0, data.length - 100)]);
   const xExtents = [min, max];
-
+  console.log('max', min, max);
   return (
     <div>
       <h1>{marketId}</h1>
@@ -86,6 +128,18 @@ const MarketView = ({
               <LineSeries
                 yAccessor={emaLong.accessor()}
                 strokeStyle={emaLong.stroke()}
+              />
+              <TrendLine
+                type="LINE"
+                snap={false}
+                enabled={false}
+                snapTo={(d) => [d.high, d.low]}
+                onStart={() => console.log('START')}
+                onSelect={() => console.log('SELECT')}
+                onDrag={() => console.log('DO NOTHING ON DRAG')}
+                onDragComplete={() => console.log('DO NOTHING ON DRAG')}
+                onComplete={onDrawTrendComplete}
+                trends={trends}
               />
               <XAxis
               // ticks={6}
