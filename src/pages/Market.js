@@ -18,6 +18,60 @@ import {
 } from 'react-financial-charts';
 import { useCallback, useEffect, useState } from 'react';
 
+const correctHighs = (dataArray, highsArray, period) => {
+  const correctedHighs = highsArray.map((dataIndexSTRUCTURE) => {
+    // RESTRUCTURE THE HIGHS ARRAY - JUST WANT INDEX. TO CHANGE....
+    const dataIndex = dataIndexSTRUCTURE[0];
+    let highestHigh = 0;
+    let highestHighIndex = 0;
+
+    let loopIndex = 0;
+    for (
+      loopIndex = dataIndex - period;
+      loopIndex <= dataIndex + period;
+      loopIndex++
+    ) {
+      if (highestHigh < dataArray[loopIndex].high) {
+        highestHigh = dataArray[loopIndex].high;
+        highestHighIndex = loopIndex;
+      }
+    }
+    console.log('HH', dataIndex, highestHigh);
+    const structure = [...dataIndexSTRUCTURE];
+    structure[0] = highestHighIndex;
+    structure[1] = highestHigh;
+    return structure;
+  });
+  return correctedHighs;
+};
+
+const correctLows = (dataArray, highsArray, period) => {
+  const correctedLows = highsArray.map((dataIndexSTRUCTURE) => {
+    // RESTRUCTURE THE HIGHS ARRAY - JUST WANT INDEX. TO CHANGE....
+    const dataIndex = dataIndexSTRUCTURE[0];
+    let lowestLow;
+    let lowestLowIndex = 0;
+
+    let loopIndex = 0;
+    for (
+      loopIndex = dataIndex - period;
+      loopIndex <= dataIndex + period;
+      loopIndex++
+    ) {
+      if (lowestLow === undefined || lowestLow > dataArray[loopIndex].high) {
+        lowestLow = dataArray[loopIndex].low;
+        lowestLowIndex = loopIndex;
+      }
+    }
+    console.log('HH', dataIndex, lowestLow);
+    const structure = [...dataIndexSTRUCTURE];
+    structure[0] = lowestLowIndex;
+    structure[1] = lowestLow;
+    return structure;
+  });
+  return correctedLows;
+};
+
 const calcSupport = (df, i) => {
   console.log(df[1]);
   const support =
@@ -32,7 +86,7 @@ const calcSupport = (df, i) => {
 const calcSmooth = (da, i, factor) => {
   let sum = 0;
   let loopedIndex;
-  for (loopedIndex = i - factor; loopedIndex < i + factor; loopedIndex++) {
+  for (loopedIndex = i - factor; loopedIndex <= i + factor; loopedIndex++) {
     sum = sum + da[loopedIndex].close;
   }
 
@@ -52,14 +106,10 @@ const calcSmoothArray = (dataArray, smoothFactor) => {
       loopedIndex < i + smoothFactor;
       loopedIndex++
     ) {
+      // sum = sum + ((dataArray[loopedIndex].high + dataArray[loopedIndex].low) / 2);
+      // sum = sum + ((dataArray[loopedIndex].close + dataArray[loopedIndex].open) / 2);
       sum = sum + dataArray[loopedIndex].close;
-      // console.log(dataArray[loopedIndex].close);
     }
-    // dataArray[i - 2].close +
-    //   dataArray[i - 1].close +
-    //   dataArray[i].close +
-    //   dataArray[i + 1].close +
-    //   dataArray[i + 2].close;
 
     const smoothed = sum / (smoothFactor * 2);
 
@@ -86,32 +136,37 @@ const calcMomentum = (array, key, factor, newKey) => {
 
 const didValueCrossZero = (array, value, i) => {
   if (array[i][value] >= 0 && array[i - 1][value] < 0) {
-    if(array[i][value] + array[i - 1][value] < 0) {
-      console.log("CROSS +ve prev");
+    if (array[i][value] + array[i - 1][value] < 0) {
+      console.log('CROSS +ve prev');
       return 1;
     }
   } else if (array[i][value] <= 0 && array[i - 1][value] > 0) {
-    if(array[i][value] + array[i - 1][value] > 0) {
-      console.log("CROSS -ve prev");
+    if (array[i][value] + array[i - 1][value] > 0) {
+      console.log('CROSS -ve prev');
       return -1;
     }
-  } else if (array.length > i && array[i][value] <= 0 && array[i + 1][value] > 0) {
-    if(array[i][value] + array[i + 1][value] > 0) {
-      console.log("CROSS +ve next");
+  } else if (
+    i + 1 < array.length &&
+    array[i][value] <= 0 &&
+    array[i + 1][value] > 0
+  ) {
+    if (array[i][value] + array[i + 1][value] > 0) {
+      console.log('CROSS +ve next');
       return 1;
     }
-  } else if (array.length > i && array[i][value] >= 0 && array[i + 1][value] < 0) {
-    if(array[i][value] + array[i + 1][value] < 0) {
-    console.log("CROSS -ve next");
-    return -1;
+  } else if (
+    i + 1 < array.length &&
+    array[i][value] >= 0 &&
+    array[i + 1][value] < 0
+  ) {
+    if (array[i][value] + array[i + 1][value] < 0) {
+      console.log('CROSS -ve next');
+      return -1;
     }
   }
   return false;
 };
 
-// def isResistance(df,i):
-
-//   resistance = df['High'][i] > df['High'][i-1]  and df['High'][i] > df['High'][i+1] and df['High'][i+1] > df['High'][i+2] and df['High'][i-1] > df['High'][i-2]  return resistance
 const MarketView = ({
   marketId,
   isLoadingBooks,
@@ -155,7 +210,7 @@ const MarketView = ({
     },
   ]);
 
-  const period = 6;
+  const period = 20;
   const emaShort = ema()
     .id('short')
     .options({ windowSize: period })
@@ -181,8 +236,10 @@ const MarketView = ({
 
   const calculatedData = calcMomentum(
     calcMomentum(
-      emaLong(calcSmoothArray(emaDouble(emaShort(initialMarketData)), 3)),
-      'emaDouble',
+      emaLong(
+        calcSmoothArray(emaDouble(emaShort(initialMarketData)), period / 2),
+      ),
+      'smooth', // USE smooth OR emaDouble
       period / 2,
       'momentum1',
     ),
@@ -191,6 +248,7 @@ const MarketView = ({
     'momentum2',
   );
 
+  const momentumOffset = 3000;
   console.log('cher!', calculatedData);
   useEffect(() => {
     const highs = [];
@@ -223,49 +281,28 @@ const MarketView = ({
 
       if (crossDirection) {
         if (d.momentum1 > 0) {
-          highs.push([index, d.high]);
-          // if (d.close > d.open) {
-          //   highs.push([index, d.close]);
-          // } else {
-          //   highs.push([index, d.open]);
-          // }
+          // highs.push([index, d.high]);
+          if (d.close > d.open) {
+            highs.push([index, d.high, d.close]);
+          } else {
+            highs.push([index, d.high, d.open]);
+          }
         } else {
-          // if (d.close < d.open) {
-          //   lows.push([index, d.close]);
-          // } else {
-          //   lows.push([index, d.open]);
-          // }
-          lows.push([index, d.low]);
+          if (d.close < d.open) {
+            lows.push([index, d.low, d.close]);
+          } else {
+            lows.push([index, d.low, d.open]);
+          }
+          // lows.push([index, d.low]);
         }
       }
-      // if (crossDirection > 0) {
-      //   // Crossed positive - high found
-      //   highs.push([index, d.high]);
-      //   // if (d.close > d.open) {
-      //   //   highs.push([index, d.close]);
-      //   // } else {
-      //   //   highs.push([index, d.open]);
-      //   // }
-      // } else if (crossDirection < 0) {
-      //   // Cross negative - low found
-      //   lows.push([index, d.low]);
-      //   // if (d.close < d.open) {
-      //   //   lows.push([index, d.close]);
-      //   // } else {
-      //   //   lows.push([index, d.open]);
-      //   // }
-      // }
-      // if (calcSupport(smoothData, index)) {
-      //   // levels.push([index, d.low]);
-      // if (d.close < d.open) {
-      //   levels.push([index, d.close]);
-      // } else {
-      //   levels.push([index, d.open]);
-      // }
-      // }
     });
 
-    const combineLowsAndHighs = [...lows, ...highs];
+    const correctedHighs = correctHighs(calculatedData, highs, period / 2);
+    const correctedLows = correctLows(calculatedData, lows, period / 2);
+    console.log(correctedHighs);
+
+    const combineLowsAndHighs = [...correctedLows, ...correctedHighs];
     const lowHighsWithStrength = combineLowsAndHighs.map((item, index) => {
       let numNear = 0;
       let sumNear = 0;
@@ -285,7 +322,13 @@ const MarketView = ({
         }
       });
       // console.log('nn', numNear);
-      return { index: item[0], value: item[1], numNear: numNear, avgLine: sumNear / numNear };
+      return {
+        index: item[0],
+        value: item[1],
+        value2: item[2],
+        numNear: numNear,
+        avgLine: sumNear / numNear,
+      };
     });
 
     console.log(
@@ -332,27 +375,60 @@ const MarketView = ({
       };
     });
 
-const linesToSave = []
-        lowHighsWithStrength.forEach((level) => {
-
-          const yPos = level.avgLine ? level.avgLine : level.value;
-          // if(level.numNear < 1) return;
-      linesToSave.push( {
-        type: 'LINE',
-        selected: false,
-        // Size of x axies is from 0 to number of data points.
-        start: [level.index, level.value],
-        end: [level.index + 10, level.value],
-        appearance: {
-          edgeFill: '#FFFFFF',
-          edgeStroke: '#000000',
-          edgeStrokeWidth: 1,
-          r: 6,
-          strokeDasharray: 'Solid',
-          strokeStyle: level.numNear < 1 ? '#DDDDDD' : level.numNear > 6 ? level.numNear > 16 ? '#000000' : '#888888': '#AAAAAA',
-          strokeWidth: 3,
+    const linesToSave = [];
+    lowHighsWithStrength.forEach((level) => {
+      // const yPos = level.avgLine ? level.avgLine : level.value;
+      const yPos = level.value;
+      // if(level.numNear < 1) return;
+      linesToSave.push(
+        {
+          type: 'LINE',
+          selected: false,
+          // Size of x axies is from 0 to number of data points.
+          start: [level.index, yPos],
+          end: [level.index + 10, yPos],
+          appearance: {
+            edgeFill: '#FFFFFF',
+            edgeStroke: '#000000',
+            edgeStrokeWidth: 1,
+            r: 6,
+            strokeDasharray: 'Solid',
+            strokeStyle:
+              level.numNear < 1
+                ? '#DDDDDD'
+                : level.numNear > 6
+                ? level.numNear > 16
+                  ? '#000000'
+                  : '#888888'
+                : '#AAAAAA',
+            strokeWidth: 3,
+          },
         },
-      });
+        // Add close/open line as well
+        // {
+        //   type: 'LINE',
+        //   selected: false,
+        //   // Size of x axies is from 0 to number of data points.
+        //   start: [level.index, level.value2],
+        //   end: [level.index + 10, level.value2],
+        //   appearance: {
+        //     edgeFill: '#FFFFFF',
+        //     edgeStroke: '#000000',
+        //     edgeStrokeWidth: 1,
+        //     r: 6,
+        //     strokeDasharray: 'Solid',
+        //     strokeStyle:
+        //       level.numNear < 1
+        //         ? '#DDDDDD'
+        //         : level.numNear > 6
+        //         ? level.numNear > 16
+        //           ? '#000000'
+        //           : '#888888'
+        //         : '#AAAAAA',
+        //     strokeWidth: 3,
+        //   },
+        // },
+      );
     });
 
     setTrends([
@@ -363,8 +439,8 @@ const linesToSave = []
         type: 'RAY',
         selected: false,
         // Size of x axies is from 0 to number of data points.
-        start: [0, 40000],
-        end: [168, 40000],
+        start: [0, momentumOffset],
+        end: [168, momentumOffset],
         appearance: {
           edgeFill: '#FFFFFF',
           edgeStroke: '#000000',
@@ -436,15 +512,15 @@ const linesToSave = []
               <LineSeries
                 yAccessor={(d) => d.smooth}
                 strokeStyle="#00FF11"
-                strokeWidth={1}
+                strokeWidth={2}
               />
               <LineSeries
-                yAccessor={(d) => d.momentum1 + 40000}
+                yAccessor={(d) => d.momentum1 + momentumOffset}
                 strokeStyle="#FF0011"
                 strokeWidth={1}
               />
               <LineSeries
-                yAccessor={(d) => d.momentum2 + 40000}
+                yAccessor={(d) => d.momentum2 + momentumOffset}
                 strokeStyle="#000000"
                 strokeWidth={1}
               />
