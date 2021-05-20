@@ -71,7 +71,7 @@ const MarketContainer = () => {
     getHistoricalPrices(
       apiMarketId,
       60,
-      new Date().getTime() - toMilliseconds(7, 'days'),
+      new Date().getTime() - toMilliseconds(21, 'days'),
     );
   }, [getHistoricalPrices, apiMarketId]);
 
