@@ -20,7 +20,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   calcSmoothArrayData,
   calcMomentumArrayData,
-} from '../analysis/transformPriceData';
+} from '../functions/metrics/transformPriceData';
 // FOR CORRECTION ALGORITHIM...
 // Could assign less weight to indexs close to the edges of the period range. This would prevent
 // the correction picking highs and lows that aren't necessarily local and is actually
@@ -257,7 +257,11 @@ const MarketView = ({
         'momentum2',
         index,
       );
-
+      // XXXXXXXXXXXXXXXXX
+      // XXXXXXXXXXXXXXXXX
+      // XXXX TODO: STORE X AND Ys in array, put the close values in another element with the same y.
+      // XXXXXXXXXXXXXXXXX
+      // XXXXXXXXXXXXXXXXX
       if (crossDirection) {
         if (d.momentum1 > 0) {
           // highs.push([index, d.high]);
