@@ -18,6 +18,10 @@ import {
 } from 'react-financial-charts';
 import { useCallback, useEffect, useState } from 'react';
 
+// FOR CORRECTION ALGORITHIM...
+// Could assign less weight to indexs close to the edges of the period range. This would prevent
+// the correction picking highs and lows that aren't necessarily local and is actually
+// a seperate high already picked up by another local maxima/minima.
 const correctHighs = (dataArray, highsArray, period) => {
   const correctedHighs = highsArray.map((dataIndexSTRUCTURE) => {
     // RESTRUCTURE THE HIGHS ARRAY - JUST WANT INDEX. TO CHANGE....
@@ -28,10 +32,12 @@ const correctHighs = (dataArray, highsArray, period) => {
     let loopIndex = 0;
     for (
       loopIndex = dataIndex - period;
-      loopIndex <= dataIndex + period;
+      loopIndex <= dataIndex + period && dataArray.length > dataIndex + period;
       loopIndex++
     ) {
       if (highestHigh < dataArray[loopIndex].high) {
+        // ADD SOME KIND OF DEMINISHING FACTOR WHEN LOOPINDEX IS FAR FROM DATAINDEX
+        // Use it to flatten this high down? Or how do I use it?
         highestHigh = dataArray[loopIndex].high;
         highestHighIndex = loopIndex;
       }
@@ -40,6 +46,13 @@ const correctHighs = (dataArray, highsArray, period) => {
     const structure = [...dataIndexSTRUCTURE];
     structure[0] = highestHighIndex;
     structure[1] = highestHigh;
+
+    if (dataArray[highestHighIndex].close > dataArray[highestHighIndex].open) {
+      structure[2] = dataArray[highestHighIndex].close;
+    } else {
+      structure[2] = dataArray[highestHighIndex].open;
+    }
+
     return structure;
   });
   return correctedHighs;
@@ -55,7 +68,7 @@ const correctLows = (dataArray, highsArray, period) => {
     let loopIndex = 0;
     for (
       loopIndex = dataIndex - period;
-      loopIndex <= dataIndex + period;
+      loopIndex <= dataIndex + period && dataArray.length > dataIndex + period;
       loopIndex++
     ) {
       if (lowestLow === undefined || lowestLow > dataArray[loopIndex].low) {
@@ -67,6 +80,14 @@ const correctLows = (dataArray, highsArray, period) => {
     const structure = [...dataIndexSTRUCTURE];
     structure[0] = lowestLowIndex;
     structure[1] = lowestLow;
+
+    // NEED TO DO THE SAME ABOVE FOR HIGHEST AND LOWSET CLOSE AND OPENS
+    if (dataArray[lowestLowIndex].close < dataArray[lowestLowIndex].open) {
+      structure[2] = dataArray[lowestLowIndex].close;
+    } else {
+      structure[2] = dataArray[lowestLowIndex].open;
+    }
+
     return structure;
   });
   return correctedLows;
@@ -115,7 +136,6 @@ const calcSmoothArray = (dataArray, smoothFactor) => {
 
     return { ...data, smooth: smoothed };
   });
-  console.log('SMOOTHED', smoothedData);
   return smoothedData;
 };
 
@@ -248,7 +268,7 @@ const MarketView = ({
     'momentum2',
   );
 
-  const momentumOffset = 3000;
+  const momentumOffset = 34;
   console.log('cher!', calculatedData);
   useEffect(() => {
     const highs = [];
