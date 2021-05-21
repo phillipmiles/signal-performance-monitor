@@ -17,7 +17,10 @@ import {
   CrossHairCursor,
 } from 'react-financial-charts';
 import { useCallback, useEffect, useState } from 'react';
-import { calcSmoothArrayData } from '../analysis/transformPriceData';
+import {
+  calcSmoothArrayData,
+  calcMomentumArrayData,
+} from '../analysis/transformPriceData';
 // FOR CORRECTION ALGORITHIM...
 // Could assign less weight to indexs close to the edges of the period range. This would prevent
 // the correction picking highs and lows that aren't necessarily local and is actually
@@ -102,21 +105,6 @@ const calcSupport = (df, i) => {
     df[i - 1].smooth < df[i - 2].smooth;
 
   return support;
-};
-
-const calcMomentum = (array, key, factor, newKey) => {
-  const momentumData = array.map((data, i) => {
-    if (i < factor) return data;
-
-    // const momentum = (data[key] / array[i - factor][key]) * 100;
-    const momentum = data[key] - array[i - factor][key];
-
-    const newData = { ...data };
-    newData[newKey] = momentum;
-    return newData;
-  });
-  console.log('momentumData', momentumData);
-  return momentumData;
 };
 
 const didValueCrossZero = (array, value, i) => {
@@ -219,8 +207,8 @@ const MarketView = ({
     })
     .accessor((d) => d.emaDouble);
 
-  const calculatedData = calcMomentum(
-    calcMomentum(
+  const calculatedData = calcMomentumArrayData(
+    calcMomentumArrayData(
       emaLong(
         calcSmoothArrayData(
           emaDouble(emaShort(initialMarketData)),
@@ -230,12 +218,12 @@ const MarketView = ({
         ),
         // calcSmoothArray(emaDouble(emaShort(initialMarketData)), period / 2),
       ),
-      'smooth', // USE smooth OR emaDouble
       period / 2,
+      'smooth', // USE smooth OR emaDouble
       'momentum1',
     ),
-    'momentum1',
     period / 2,
+    'momentum1',
     'momentum2',
   );
 

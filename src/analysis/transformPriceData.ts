@@ -30,3 +30,19 @@ export const calcSmoothArrayData = (
     return { ...priceData, [id ? id : 'smooth']: smoothed };
   });
 };
+
+export const calcMomentumArrayData = (
+  marketPriceData: any[],
+  period: number,
+  key: string,
+  id?: string,
+): any[] => {
+  return marketPriceData.map((priceData, i) => {
+    if (i < period) return priceData;
+
+    // const momentum = (data[key] / array[i - factor][key]) * 100;
+    const momentum = priceData[key] - marketPriceData[i - period][key];
+
+    return { ...priceData, [id ? id : 'momentum']: momentum };
+  });
+};
