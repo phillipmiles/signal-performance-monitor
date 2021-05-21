@@ -58,7 +58,7 @@ const correctLows = (dataArray, highsArray, period) => {
       loopIndex <= dataIndex + period;
       loopIndex++
     ) {
-      if (lowestLow === undefined || lowestLow > dataArray[loopIndex].high) {
+      if (lowestLow === undefined || lowestLow > dataArray[loopIndex].low) {
         lowestLow = dataArray[loopIndex].low;
         lowestLowIndex = loopIndex;
       }
@@ -210,7 +210,7 @@ const MarketView = ({
     },
   ]);
 
-  const period = 20;
+  const period = 10;
   const emaShort = ema()
     .id('short')
     .options({ windowSize: period })
@@ -298,8 +298,8 @@ const MarketView = ({
       }
     });
 
-    const correctedHighs = correctHighs(calculatedData, highs, period / 2);
-    const correctedLows = correctLows(calculatedData, lows, period / 2);
+    const correctedHighs = correctHighs(calculatedData, highs, period);
+    const correctedLows = correctLows(calculatedData, lows, period);
     console.log(correctedHighs);
 
     const combineLowsAndHighs = [...correctedLows, ...correctedHighs];
@@ -382,6 +382,7 @@ const MarketView = ({
       // if(level.numNear < 1) return;
       linesToSave.push(
         {
+          // type: level.numNear > 6 ? 'RAY' : 'LINE',
           type: 'LINE',
           selected: false,
           // Size of x axies is from 0 to number of data points.
