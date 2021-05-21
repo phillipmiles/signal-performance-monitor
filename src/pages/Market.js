@@ -17,7 +17,7 @@ import {
   CrossHairCursor,
 } from 'react-financial-charts';
 import { useCallback, useEffect, useState } from 'react';
-
+import { calcSmoothArrayData } from '../analysis/transformPriceData';
 // FOR CORRECTION ALGORITHIM...
 // Could assign less weight to indexs close to the edges of the period range. This would prevent
 // the correction picking highs and lows that aren't necessarily local and is actually
@@ -102,41 +102,6 @@ const calcSupport = (df, i) => {
     df[i - 1].smooth < df[i - 2].smooth;
 
   return support;
-};
-
-const calcSmooth = (da, i, factor) => {
-  let sum = 0;
-  let loopedIndex;
-  for (loopedIndex = i - factor; loopedIndex <= i + factor; loopedIndex++) {
-    sum = sum + da[loopedIndex].close;
-  }
-
-  const smoothed = sum / (factor * 2);
-
-  return smoothed;
-};
-
-const calcSmoothArray = (dataArray, smoothFactor) => {
-  const smoothedData = dataArray.map((data, i) => {
-    if (i < smoothFactor || i > dataArray.length - smoothFactor) return data;
-    let sum = 0;
-
-    let loopedIndex;
-    for (
-      loopedIndex = i - smoothFactor;
-      loopedIndex < i + smoothFactor;
-      loopedIndex++
-    ) {
-      // sum = sum + ((dataArray[loopedIndex].high + dataArray[loopedIndex].low) / 2);
-      // sum = sum + ((dataArray[loopedIndex].close + dataArray[loopedIndex].open) / 2);
-      sum = sum + dataArray[loopedIndex].close;
-    }
-
-    const smoothed = sum / (smoothFactor * 2);
-
-    return { ...data, smooth: smoothed };
-  });
-  return smoothedData;
 };
 
 const calcMomentum = (array, key, factor, newKey) => {
@@ -257,7 +222,13 @@ const MarketView = ({
   const calculatedData = calcMomentum(
     calcMomentum(
       emaLong(
-        calcSmoothArray(emaDouble(emaShort(initialMarketData)), period / 2),
+        calcSmoothArrayData(
+          emaDouble(emaShort(initialMarketData)),
+          period / 2,
+          'close',
+          'smooth',
+        ),
+        // calcSmoothArray(emaDouble(emaShort(initialMarketData)), period / 2),
       ),
       'smooth', // USE smooth OR emaDouble
       period / 2,
