@@ -18,20 +18,18 @@ import {
 } from 'react-financial-charts';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  calcSmoothArrayData,
-  calcMomentumArrayData,
+  calcDataArrayMomentum,
+  calcDataArraySmooth,
 } from '../functions/metrics/transformPriceData';
+import { findDataArrayMinimaMaxima } from '../functions/util/findMinimaMaxima';
 // FOR CORRECTION ALGORITHIM...
 // Could assign less weight to indexs close to the edges of the period range. This would prevent
 // the correction picking highs and lows that aren't necessarily local and is actually
 // a seperate high already picked up by another local maxima/minima.
 const correctHighs = (dataArray, highsArray, period) => {
-  const correctedHighs = highsArray.map((dataIndexSTRUCTURE) => {
-    // RESTRUCTURE THE HIGHS ARRAY - JUST WANT INDEX. TO CHANGE....
-    const dataIndex = dataIndexSTRUCTURE[0];
+  const correctedHighs = highsArray.map((dataIndex) => {
     let highestHigh = 0;
     let highestHighIndex = 0;
-
     let loopIndex = 0;
     for (
       loopIndex = dataIndex - period;
@@ -45,29 +43,26 @@ const correctHighs = (dataArray, highsArray, period) => {
         highestHighIndex = loopIndex;
       }
     }
-    console.log('HH', dataIndex, highestHigh);
-    const structure = [...dataIndexSTRUCTURE];
-    structure[0] = highestHighIndex;
-    structure[1] = highestHigh;
+    // console.log('HH', dataIndex, highestHigh);
+    // const structure = [...dataIndexSTRUCTURE];
+    // structure[0] = highestHighIndex;
+    // structure[1] = highestHigh;
 
-    if (dataArray[highestHighIndex].close > dataArray[highestHighIndex].open) {
-      structure[2] = dataArray[highestHighIndex].close;
-    } else {
-      structure[2] = dataArray[highestHighIndex].open;
-    }
+    // if (dataArray[highestHighIndex].close > dataArray[highestHighIndex].open) {
+    //   structure[2] = dataArray[highestHighIndex].close;
+    // } else {
+    //   structure[2] = dataArray[highestHighIndex].open;
+    // }
 
-    return structure;
+    return { index: highestHighIndex, value: highestHigh };
   });
   return correctedHighs;
 };
 
 const correctLows = (dataArray, highsArray, period) => {
-  const correctedLows = highsArray.map((dataIndexSTRUCTURE) => {
-    // RESTRUCTURE THE HIGHS ARRAY - JUST WANT INDEX. TO CHANGE....
-    const dataIndex = dataIndexSTRUCTURE[0];
+  const correctedLows = highsArray.map((dataIndex) => {
     let lowestLow;
     let lowestLowIndex = 0;
-
     let loopIndex = 0;
     for (
       loopIndex = dataIndex - period;
@@ -79,34 +74,31 @@ const correctLows = (dataArray, highsArray, period) => {
         lowestLowIndex = loopIndex;
       }
     }
-    console.log('HH', dataIndex, lowestLow);
-    const structure = [...dataIndexSTRUCTURE];
-    structure[0] = lowestLowIndex;
-    structure[1] = lowestLow;
+    // console.log('HH', dataIndex, lowestLow);
+    // const structure = [...dataIndexSTRUCTURE];
+    // structure[0] = lowestLowIndex;
+    // structure[1] = lowestLow;
 
-    // NEED TO DO THE SAME ABOVE FOR HIGHEST AND LOWSET CLOSE AND OPENS
-    if (dataArray[lowestLowIndex].close < dataArray[lowestLowIndex].open) {
-      structure[2] = dataArray[lowestLowIndex].close;
-    } else {
-      structure[2] = dataArray[lowestLowIndex].open;
-    }
+    // // NEED TO DO THE SAME ABOVE FOR HIGHEST AND LOWSET CLOSE AND OPENS
+    // if (dataArray[lowestLowIndex].close < dataArray[lowestLowIndex].open) {
+    //   structure[2] = dataArray[lowestLowIndex].close;
+    // } else {
+    //   structure[2] = dataArray[lowestLowIndex].open;
+    // }
 
-    return structure;
+    return { index: lowestLowIndex, value: lowestLow };
   });
   return correctedLows;
 };
 
-const calcSupport = (df, i) => {
-  console.log(df[1]);
-  const support =
-    df[i].smooth < df[i - 1].smooth &&
-    df[i].smooth < df[i + 1].smooth &&
-    df[i + 1].smooth < df[i + 2].smooth &&
-    df[i - 1].smooth < df[i - 2].smooth;
-
-  return support;
+const isValBetween = (val, val2, val3) => {
+  if ((val > val2 && val <= val3) || (val > val2 && val <= val3)) {
+    return true;
+  }
+  return false;
 };
 
+// Array, va
 const didValueCrossZero = (array, value, i) => {
   if (array[i][value] >= 0 && array[i - 1][value] < 0) {
     if (array[i][value] + array[i - 1][value] < 0) {
@@ -207,108 +199,73 @@ const MarketView = ({
     })
     .accessor((d) => d.emaDouble);
 
-  const calculatedData = calcMomentumArrayData(
-    calcMomentumArrayData(
+  const calculatedData = calcDataArrayMomentum(
+    calcDataArrayMomentum(
       emaLong(
-        calcSmoothArrayData(
+        // calcDataArraySmooth(
+        calcDataArraySmooth(
           emaDouble(emaShort(initialMarketData)),
           period / 2,
           'close',
           'smooth',
         ),
-        // calcSmoothArray(emaDouble(emaShort(initialMarketData)), period / 2),
+        // period / 2,
+        //   (candle) => {
+        //     return (candle.low + candle.high) / 2;
+        //   },
+        //   'smoothAvgPriceRange',
+        // ),
+        // // calcSmoothArray(emaDouble(emaShort(initialMarketData)), period / 2),
       ),
-      period / 2,
+      // period / 2,
+      period,
       'smooth', // USE smooth OR emaDouble
       'momentum1',
     ),
-    period / 2,
+    // period / 2,
+    period,
     'momentum1',
     'momentum2',
   );
 
-  const momentumOffset = 34;
+  const momentumOffset = 2800;
   console.log('cher!', calculatedData);
   useEffect(() => {
-    const highs = [];
-    const lows = [];
+    // const highs = [];
+    // const lows = [];
+    const { minima, maxima } = findDataArrayMinimaMaxima(
+      calculatedData,
+      'momentum1',
+      'momentum2',
+    );
 
-    // const smoothData = calcSmoothArray(initialMarketData, 6);
-    // const momentum1 = calcMomentum(smoothData, 'smooth', 10, 'momentum1');
-    // const momentum2 = calcMomentum(momentum1, 'momentum1', 10, 'momentum2');
-    // console.log('momentum2', momentum2);
-    // smoothData.forEach((d, index) => {
-    //   if (index < 2 || index > smoothData.length - 3) return;
-
-    //   if (calcSupport(smoothData, index)) {
-    //     // levels.push([index, d.low]);
-    //     if (d.close < d.open) {
-    //       levels.push([index, d.close]);
-    //     } else {
-    //       levels.push([index, d.open]);
-    //     }
-    //   }
-    // });
-
-    calculatedData.forEach((d, index) => {
-      if (!d.momentum1) return;
-      const crossDirection = didValueCrossZero(
-        calculatedData,
-        'momentum2',
-        index,
-      );
-      // XXXXXXXXXXXXXXXXX
-      // XXXXXXXXXXXXXXXXX
-      // XXXX TODO: STORE X AND Ys in array, put the close values in another element with the same y.
-      // XXXXXXXXXXXXXXXXX
-      // XXXXXXXXXXXXXXXXX
-      if (crossDirection) {
-        if (d.momentum1 > 0) {
-          // highs.push([index, d.high]);
-          if (d.close > d.open) {
-            highs.push([index, d.high, d.close]);
-          } else {
-            highs.push([index, d.high, d.open]);
-          }
-        } else {
-          if (d.close < d.open) {
-            lows.push([index, d.low, d.close]);
-          } else {
-            lows.push([index, d.low, d.open]);
-          }
-          // lows.push([index, d.low]);
-        }
-      }
-    });
-
-    const correctedHighs = correctHighs(calculatedData, highs, period);
-    const correctedLows = correctLows(calculatedData, lows, period);
-    console.log(correctedHighs);
+    const correctedHighs = correctHighs(calculatedData, maxima, period / 2);
+    const correctedLows = correctLows(calculatedData, minima, period / 2);
 
     const combineLowsAndHighs = [...correctedLows, ...correctedHighs];
-    const lowHighsWithStrength = combineLowsAndHighs.map((item, index) => {
+    const lowHighsWithStrength = combineLowsAndHighs.map((item) => {
       let numNear = 0;
       let sumNear = 0;
       // console.log('nn', numNear);
-      combineLowsAndHighs.forEach((itemCompare, indexCompare) => {
-        if (itemCompare[1] === item[1]) return;
+      combineLowsAndHighs.forEach((itemCompare) => {
+        if (itemCompare.index === item.index) return;
 
         if (
-          itemCompare[1] < item[1] + item[1] * 0.015 &&
-          itemCompare[1] > item[1] - item[1] * 0.015
+          itemCompare.value < item.value + item.value * 0.015 &&
+          itemCompare.value > item.value - item.value * 0.015
         ) {
           // console.log(itemCompare[1], item[1]);
           // console.log('new num', indexCompare, numNear);
           numNear = numNear + 1;
-          sumNear = sumNear + itemCompare[1];
+          sumNear = sumNear + itemCompare.value;
           // HOW AND WHERE AM I STORING UBER LINES!!?!?
         }
       });
       // console.log('nn', numNear);
       return {
-        index: item[0],
-        value: item[1],
-        value2: item[2],
+        index: item.index,
+        value: item.value,
+        // value2: item[2],
         numNear: numNear,
         avgLine: sumNear / numNear,
       };
@@ -320,45 +277,8 @@ const MarketView = ({
       lowHighsWithStrength,
     );
 
-    const highsToSave = highs.map((level) => {
-      return {
-        type: 'LINE',
-        selected: false,
-        // Size of x axies is from 0 to number of data points.
-        start: level,
-        end: [level[0] + 10, level[1]],
-        appearance: {
-          edgeFill: '#FFFFFF',
-          edgeStroke: '#000000',
-          edgeStrokeWidth: 1,
-          r: 6,
-          strokeDasharray: 'Solid',
-          strokeStyle: '#FF0000',
-          strokeWidth: 3,
-        },
-      };
-    });
-
-    const lowsToSave = lows.map((level) => {
-      return {
-        type: 'LINE',
-        selected: false,
-        // Size of x axies is from 0 to number of data points.
-        start: level,
-        end: [level[0] + 10, level[1]],
-        appearance: {
-          edgeFill: '#FFFFFF',
-          edgeStroke: '#000000',
-          edgeStrokeWidth: 1,
-          r: 6,
-          strokeDasharray: 'Solid',
-          strokeStyle: '#00CC22',
-          strokeWidth: 3,
-        },
-      };
-    });
-
     const linesToSave = [];
+
     lowHighsWithStrength.forEach((level) => {
       // const yPos = level.avgLine ? level.avgLine : level.value;
       const yPos = level.value;
@@ -439,8 +359,6 @@ const MarketView = ({
   }, [initialMarketData]);
 
   const onDrawTrendComplete = useCallback((event, trends) => {
-    console.log('HEEERERE');
-    console.log(trends);
     setTrends(trends);
   }, []);
 
@@ -496,6 +414,11 @@ const MarketView = ({
               <LineSeries
                 yAccessor={(d) => d.smooth}
                 strokeStyle="#00FF11"
+                strokeWidth={2}
+              />
+              <LineSeries
+                yAccessor={(d) => d.smoothAvgPriceRange}
+                strokeStyle="#0011FF"
                 strokeWidth={2}
               />
               <LineSeries
