@@ -1,5 +1,5 @@
 /** @jsx jsx */
-import { jsx } from 'theme-ui';
+import { jsx, useThemeUI } from 'theme-ui';
 import PropTypes from 'prop-types';
 import {
   discontinuousTimeScaleProviderBuilder,
@@ -22,7 +22,7 @@ import {
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import Heading from '../components/generic/Heading';
 
-const margin = { left: 0, right: 64, top: 0, bottom: 24 };
+const margin = { left: 0, right: 108, top: 0, bottom: 48 };
 const rsiYExtents = [0, 100];
 const rsiTickValues = [30, 50, 70];
 const rsiToolTipOrigin = [8, 16];
@@ -43,6 +43,9 @@ const MarketChart = ({
   width,
   height,
 }) => {
+  const { theme } = useThemeUI();
+
+  const styleAxisColor = theme.colors.neutral[6];
   const xScaleProvider = useMemo(
     () =>
       discontinuousTimeScaleProviderBuilder().inputDateAccessor(
@@ -150,8 +153,31 @@ const MarketChart = ({
             onComplete={onDrawTrendComplete}
             trends={trends}
           />
-          <XAxis ticks={0} />
-          <YAxis />
+          <XAxis
+            ticks={0}
+            strokeStyle={styleAxisColor}
+            tickStrokeStyle={styleAxisColor}
+            tickLabelFill={styleAxisColor}
+          />
+          <YAxis
+            strokeStyle={styleAxisColor}
+            tickStrokeStyle={styleAxisColor}
+            tickLabelFill={styleAxisColor}
+          />
+          {/* <XAxis
+            axisAt="top"
+            ticks={0}
+            strokeStyle={styleAxisColor}
+            tickStrokeStyle={styleAxisColor}
+            tickLabelFill={styleAxisColor}
+          />
+          <YAxis
+            axisAt="left"
+            ticks={0}
+            strokeStyle={styleAxisColor}
+            tickStrokeStyle={styleAxisColor}
+            tickLabelFill={styleAxisColor}
+          /> */}
           <MovingAverageTooltip
             origin={[8, 0]}
             options={[
@@ -169,7 +195,7 @@ const MarketChart = ({
               },
             ]}
           />
-          <CrossHairCursor />
+          <CrossHairCursor strokeStyle={theme.colors.neutral[7]} />
         </Chart>
 
         <Chart
@@ -178,8 +204,18 @@ const MarketChart = ({
           height={rsiChartHeight}
           origin={rsiChartOrigin}
         >
-          <XAxis ticks={0} />
-          <YAxis tickValues={rsiTickValues} />
+          <XAxis
+            ticks={0}
+            strokeStyle={styleAxisColor}
+            tickStrokeStyle={styleAxisColor}
+            tickLabelFill={styleAxisColor}
+          />
+          <YAxis
+            tickValues={rsiTickValues}
+            strokeStyle={styleAxisColor}
+            tickStrokeStyle={styleAxisColor}
+            tickLabelFill={styleAxisColor}
+          />
           <RSISeries yAccessor={rsiYAccessor} />
           <RSITooltip
             origin={rsiToolTipOrigin}
@@ -193,8 +229,16 @@ const MarketChart = ({
           origin={barChartOrigin}
           yExtents={barChartExtents}
         >
-          <YAxis />
-          <XAxis />
+          <YAxis
+            strokeStyle={styleAxisColor}
+            tickStrokeStyle={styleAxisColor}
+            tickLabelFill={styleAxisColor}
+          />
+          <XAxis
+            strokeStyle={styleAxisColor}
+            tickStrokeStyle={styleAxisColor}
+            tickLabelFill={styleAxisColor}
+          />
           <BarSeries yAccessor={volumeSeries} />
         </Chart>
       </ChartCanvas>
@@ -216,6 +260,8 @@ MarketChart.defaultProps = {
   loadingBooksError: '',
 };
 
-export default withSize({ style: { minHeight: 740 } })(
-  withDeviceRatio()(MarketChart),
-);
+export default withSize({
+  style: {
+    // minHeight: 660,
+  },
+})(withDeviceRatio()(MarketChart));
