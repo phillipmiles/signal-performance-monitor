@@ -38,6 +38,10 @@
     "> 0.25%"
   ],
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.35",
+    "@fortawesome/free-regular-svg-icons": "^5.15.3",
+    "@fortawesome/free-solid-svg-icons": "^5.15.3",
+    "@fortawesome/react-fontawesome": "^0.1.14",
     "@loadable/component": "^5.14.1",
     "@react-native-firebase/app": "^10.6.4",
     "@react-native-firebase/auth": "^10.6.4",
@@ -52,6 +56,7 @@
     "react-financial-charts": "^1.2.2",
     "react-redux": "^7.2.2",
     "react-router-dom": "^5.2.0",
+    "react-transition-group": "^4.4.1",
     "recoil": "^0.2.0",
     "redux": "^4.0.5",
     "redux-thunk": "^2.3.0",

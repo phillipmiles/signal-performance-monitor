@@ -5,7 +5,7 @@ import { jsx } from 'theme-ui';
 import Market from './Market';
 import ftxapi from '../api/ftx/api';
 import { toMilliseconds, toSeconds } from '../util/time';
-import { ema, rsi } from 'react-financial-charts';
+import { ema, rsi, getMouseCanvas } from 'react-financial-charts';
 import {
   calcDataArrayMomentum,
   calcDataArraySmooth,
@@ -123,6 +123,12 @@ const correctLows = (dataArray, highsArray, period) => {
 };
 
 const MarketContainer = () => {
+  const [
+    isIndicatorsSettingsPanelVisible,
+    setIsIndicatorsSettingsPanelVisible,
+  ] = useState(false);
+  const [focusedDataItem, setFocusedDataItem] = useState({});
+  const [isInfoPanelVisible, setIsInfoPanelVisible] = useState(false);
   const [marketData, setMarketData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [calculatedMarketData, setCalculatedMarketData] = useState([]);
@@ -372,9 +378,28 @@ const MarketContainer = () => {
 
     setCalculatedMarketData(calculatedData);
   }, [marketData]);
+
+  const toggleIndicatorsSettingsPanel = useCallback(() => {
+    if (isInfoPanelVisible) setIsInfoPanelVisible(false);
+    setIsIndicatorsSettingsPanelVisible(!isIndicatorsSettingsPanelVisible);
+  }, [isInfoPanelVisible, isIndicatorsSettingsPanelVisible]);
+
+  const toggleInfoPanel = useCallback(() => {
+    if (isIndicatorsSettingsPanelVisible)
+      setIsIndicatorsSettingsPanelVisible(false);
+    setIsInfoPanelVisible(!isInfoPanelVisible);
+  }, [isIndicatorsSettingsPanelVisible, isInfoPanelVisible]);
+
+  const updateFocusedDataItem = useCallback((dataItem) => {
+    setFocusedDataItem(dataItem);
+  }, []);
+
+  // const iDunno = getMouseCanvas();
   return (
     <Market
       marketId={apiMarketId}
+      onHoverCandle={updateFocusedDataItem}
+      focusedDataItem={focusedDataItem}
       isLoadingData={isLoading}
       marketData={calculatedMarketData}
       error={error}
@@ -384,6 +409,10 @@ const MarketContainer = () => {
       emaDouble={emaDouble}
       rsiOptions={rsiOptions}
       rsiYAccessor={rsiYAccessor}
+      isInfoPanelVisible={isInfoPanelVisible}
+      toggleInfoPanel={toggleInfoPanel}
+      isIndicatorsSettingsPanelVisible={isIndicatorsSettingsPanelVisible}
+      toggleIndicatorsSettingsPanel={toggleIndicatorsSettingsPanel}
     />
   );
 };

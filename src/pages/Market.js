@@ -3,6 +3,12 @@ import { jsx, Flex } from 'theme-ui';
 import Heading from '../components/generic/Heading';
 import MarketChart from '../components/MarketChart';
 import ActivityIndicator from '../components/ActivityIndicator';
+import ButtonIcon from '../components/generic/ButtonIcon';
+import { faChartBar } from '@fortawesome/free-regular-svg-icons';
+import { faInfo, faChartLine, faCog } from '@fortawesome/free-solid-svg-icons';
+import MarketChartSidePanel from '../components/MarketChartSidePanel';
+import Text from '../components/generic/Text';
+import DisplayDataItem from '../components/DisplayDataItem';
 
 const MarketView = ({
   marketId,
@@ -16,14 +22,18 @@ const MarketView = ({
   momentumOffset,
   rsiOptions,
   rsiYAccessor,
+  isInfoPanelVisible,
+  isIndicatorsSettingsPanelVisible,
+  toggleIndicatorsSettingsPanel,
+  toggleInfoPanel,
+  onHoverCandle,
+  focusedDataItem,
 }) => {
   return (
     <div
       sx={{
         height: '100vh',
-        bg: '#1D222B',
-        px: 3,
-        py: 3,
+        bg: '#161D25',
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -33,50 +43,102 @@ const MarketView = ({
           display: 'flex',
           flexDirection: 'column',
           flexGrow: 1,
-          // bg: 'black',
         }}
       >
         <Flex
           sx={{
             justifyContent: 'space-between',
-            // borderBottomColor: 'neutral.6',
-            // borderBottomWidth: 1,
-            // borderBottomStyle: 'solid',
+            alignItems: 'center',
+            px: 3,
+            py: 2,
+            bg: '#0E131A',
           }}
         >
-          <Heading as="h1" variant="heading4" sx={{ mb: 4, color: 'white' }}>
+          <Heading as="h1" variant="heading5" sx={{ color: 'white' }}>
             {marketId}
           </Heading>
           <div>
-            <input type="checkbox" />
-            Toggle rsi
+            <ButtonIcon
+              icon={faChartLine}
+              onClick={toggleInfoPanel}
+              ariaLabel="Toggle analysis panel"
+              sx={{ ml: 2 }}
+              selected={isInfoPanelVisible}
+            />
+            <ButtonIcon
+              icon={faCog}
+              sx={{ ml: 2 }}
+              onClick={toggleIndicatorsSettingsPanel}
+              ariaLabel="Toggle indicators panel"
+              selected={isIndicatorsSettingsPanelVisible}
+            />
           </div>
         </Flex>
         {isLoadingData ? (
           <ActivityIndicator />
         ) : (
-          <div
+          <Flex
             sx={{
               flexGrow: 1,
-              // mx: 4,
-
-              // p: 4,
-
               borderRadius: 8,
             }}
           >
-            <MarketChart
-              height={300}
-              marketData={marketData}
-              emaShort={emaShort}
-              emaLong={emaLong}
-              emaDouble={emaDouble}
-              trends={trends}
-              momentumOffset={momentumOffset}
-              rsiOptions={rsiOptions}
-              rsiYAccessor={rsiYAccessor}
-            />
-          </div>
+            <div sx={{ flexGrow: 1 }}>
+              <MarketChart
+                marketData={marketData}
+                emaShort={emaShort}
+                emaLong={emaLong}
+                emaDouble={emaDouble}
+                trends={trends}
+                momentumOffset={momentumOffset}
+                rsiOptions={rsiOptions}
+                rsiYAccessor={rsiYAccessor}
+                onHoverCandle={onHoverCandle}
+              />
+            </div>
+
+            {isInfoPanelVisible && (
+              <MarketChartSidePanel>
+                <Heading as="h2" variant="heading6" sx={{ mb: 3 }}>
+                  Info
+                </Heading>
+                <DisplayDataItem
+                  label="High"
+                  value={`$${focusedDataItem.high}`}
+                />
+                <DisplayDataItem
+                  label="Low"
+                  value={`$${focusedDataItem.low}`}
+                />
+                <DisplayDataItem
+                  label="Open"
+                  value={`$${focusedDataItem.open}`}
+                />
+                <DisplayDataItem
+                  label="Close"
+                  value={`$${focusedDataItem.close}`}
+                />
+                <DisplayDataItem
+                  label="Volume"
+                  value={Math.floor(focusedDataItem.volume)}
+                />
+                <Heading as="h2" variant="heading6" sx={{ mt: 4, mb: 3 }}>
+                  Indicators
+                </Heading>
+                <DisplayDataItem label="Candle type" value={`???`} />
+                <Heading as="h2" variant="heading6" sx={{ mt: 4, mb: 3 }}>
+                  Analysis
+                </Heading>
+              </MarketChartSidePanel>
+            )}
+            {isIndicatorsSettingsPanelVisible && (
+              <MarketChartSidePanel>
+                <Heading as="h2" variant="heading6">
+                  Indicators
+                </Heading>
+              </MarketChartSidePanel>
+            )}
+          </Flex>
         )}
       </div>
     </div>

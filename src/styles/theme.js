@@ -21,8 +21,10 @@ export default {
     content: 1140,
   },
   fonts: {
-    body: 'Droid Sans, system-ui, sans-serif',
-    heading: 'Droid Serif, sans-serif',
+    body: 'Inter, system-ui, sans-serif',
+    heading: 'Inter, sans-serif',
+    // body: 'Droid Sans, system-ui, sans-serif',
+    // heading: 'Droid Serif, sans-serif',
     // Menlo is only for Mac OSX Snow Leopard only.
     monospace: 'Menlo, monospace',
   },
@@ -87,7 +89,7 @@ export default {
     },
     body: {
       fontFamily: 'body',
-      fontSize: 2,
+      fontSize: 1,
       lineHeight: 'normal',
       fontWeight: 'regular',
     },
@@ -184,5 +186,8 @@ export default {
         opacity: 1,
       },
     },
+  },
+  easing: {
+    slowToQuickToSlow: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
   },
 };

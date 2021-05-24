@@ -5,7 +5,8 @@ const FontLoader = ({ children }) => {
   useEffect(() => {
     WebFont.load({
       google: {
-        families: ['Droid Sans', 'Droid Serif'],
+        // families: ['Droid Sans', 'Droid Serif'],
+        families: ['Inter'],
       },
     });
   }, []);

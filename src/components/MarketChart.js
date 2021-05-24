@@ -1,8 +1,10 @@
 /** @jsx jsx */
 import { jsx, useThemeUI } from 'theme-ui';
 import PropTypes from 'prop-types';
+import { format } from 'd3-format';
 import {
   Annotate,
+  MouseCoordinateY,
   SvgPathAnnotation,
   LabelAnnotation,
   discontinuousTimeScaleProviderBuilder,
@@ -14,7 +16,6 @@ import {
   YAxis,
   XAxis,
   LineSeries,
-  ema,
   MovingAverageTooltip,
   TrendLine,
   CrossHairCursor,
@@ -23,7 +24,6 @@ import {
   BarSeries,
 } from 'react-financial-charts';
 import { useCallback, useEffect, useState, useMemo } from 'react';
-import Heading from '../components/generic/Heading';
 
 const margin = { left: 0, right: 108, top: 0, bottom: 48 };
 const rsiYExtents = [0, 100];
@@ -32,9 +32,7 @@ const rsiToolTipOrigin = [8, 16];
 
 const MarketChart = ({
   marketId,
-  isLoadingBooks,
   marketData,
-  error,
   emaShort,
   emaLong,
   emaDouble,
@@ -45,6 +43,7 @@ const MarketChart = ({
   ratio,
   width,
   height,
+  onHoverCandle,
 }) => {
   const { theme } = useThemeUI();
 
@@ -118,6 +117,15 @@ const MarketChart = ({
     y: ({ yScale, datum }) => yScale(datum.emaShort),
   };
 
+  const pricesDisplayFormat = format('.2f');
+
+  const customSnapX = (props, moreProps) => {
+    const { xScale, xAccessor, currentItem, mouseXY } = moreProps;
+    const { snapX } = props;
+    const x = snapX ? Math.round(xScale(xAccessor(currentItem))) : mouseXY[0];
+    onHoverCandle(currentItem);
+    return x;
+  };
   if (marketData.length > 0) {
     return (
       <ChartCanvas
@@ -131,9 +139,21 @@ const MarketChart = ({
         height={height}
         xExtents={xExtents}
         margin={margin}
+        getCanvasContexts={() => console.log('wtf')}
+        onClick={(e) => console.log('fucking', e)}
+        getMutableState={() => console.log('blehg')}
+        onMouseMove={() => console.log('erm')}
       >
         <Chart id={'chartId'} yExtents={yExtents} height={candleChartHeight}>
           <CandlestickSeries />
+          <CrossHairCursor
+            strokeStyle={theme.colors.neutral[7]}
+            customX={customSnapX}
+          />
+          <MouseCoordinateY
+            arrowWidth={10}
+            displayFormat={pricesDisplayFormat}
+          />
           <LineSeries
             yAccessor={emaShort.accessor()}
             strokeStyle={emaShort.stroke()}
@@ -195,20 +215,6 @@ const MarketChart = ({
             tickStrokeStyle={styleAxisColor}
             tickLabelFill={styleAxisColor}
           />
-          {/* <XAxis
-            axisAt="top"
-            ticks={0}
-            strokeStyle={styleAxisColor}
-            tickStrokeStyle={styleAxisColor}
-            tickLabelFill={styleAxisColor}
-          />
-          <YAxis
-            axisAt="left"
-            ticks={0}
-            strokeStyle={styleAxisColor}
-            tickStrokeStyle={styleAxisColor}
-            tickLabelFill={styleAxisColor}
-          /> */}
           <MovingAverageTooltip
             origin={[8, 0]}
             options={[
@@ -226,7 +232,6 @@ const MarketChart = ({
               },
             ]}
           />
-          <CrossHairCursor strokeStyle={theme.colors.neutral[7]} />
         </Chart>
 
         <Chart
