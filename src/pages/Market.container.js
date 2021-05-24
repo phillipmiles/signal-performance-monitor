@@ -11,6 +11,7 @@ import {
   calcDataArraySmooth,
 } from '../functions/metrics/transformPriceData';
 import { findDataArrayMinimaMaxima } from '../functions/util/findMinimaMaxima';
+import { emaCross } from '../functions/indicators/emaCross';
 
 const momentumOffset = 2800;
 const period = 12;
@@ -219,26 +220,32 @@ const MarketContainer = () => {
   }, [getHistoricalPrices, apiMarketId]);
 
   useEffect(() => {
-    const calculatedData = rsiCalculator(
-      calcDataArrayMomentum(
+    const calculatedData = emaCross(
+      rsiCalculator(
         calcDataArrayMomentum(
-          emaLong(
-            calcDataArraySmooth(
-              emaDouble(emaShort(marketData)),
-              period / 2,
-              'close',
-              'smooth',
+          calcDataArrayMomentum(
+            emaLong(
+              calcDataArraySmooth(
+                emaDouble(emaShort(marketData)),
+                period / 2,
+                'close',
+                'smooth',
+              ),
             ),
+            period / 2,
+            'smooth', // USE smooth OR emaDouble
+            'momentum1',
           ),
           period / 2,
-          'smooth', // USE smooth OR emaDouble
           'momentum1',
+          'momentum2',
         ),
-        period / 2,
-        'momentum1',
-        'momentum2',
       ),
+      'emaShort',
+      'emaLong',
     );
+
+    console.log('DATA', calculatedData);
 
     const { minima, maxima } = findDataArrayMinimaMaxima(
       calculatedData,

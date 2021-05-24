@@ -2,6 +2,9 @@
 import { jsx, useThemeUI } from 'theme-ui';
 import PropTypes from 'prop-types';
 import {
+  Annotate,
+  SvgPathAnnotation,
+  LabelAnnotation,
   discontinuousTimeScaleProviderBuilder,
   withDeviceRatio,
   withSize,
@@ -92,6 +95,29 @@ const MarketChart = ({
 
   const candleChartHeight =
     height - margin.top - margin.bottom - rsiChartHeight - barChartHeight;
+
+  const annotationWhen = (d) => {
+    if (d.indicators !== undefined) {
+      const emaCrossIndicator = d.indicators.find(
+        (indicator) => indicator.id === 'ema-cross',
+      );
+      if (emaCrossIndicator) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const annotation = {
+    fill: '#2196f3',
+    path: () =>
+      'M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z',
+    pathWidth: 12,
+    pathHeight: 22,
+    tooltip: 'Go short',
+    y: ({ yScale, datum }) => yScale(datum.emaShort),
+  };
+
   if (marketData.length > 0) {
     return (
       <ChartCanvas
@@ -152,6 +178,11 @@ const MarketChart = ({
             onDragComplete={() => console.log('DO NOTHING ON DRAG')}
             onComplete={onDrawTrendComplete}
             trends={trends}
+          />
+          <Annotate
+            with={SvgPathAnnotation}
+            usingProps={annotation}
+            when={annotationWhen}
           />
           <XAxis
             ticks={0}
@@ -238,6 +269,7 @@ const MarketChart = ({
             strokeStyle={styleAxisColor}
             tickStrokeStyle={styleAxisColor}
             tickLabelFill={styleAxisColor}
+            ticks={20}
           />
           <BarSeries yAccessor={volumeSeries} />
         </Chart>

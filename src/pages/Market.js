@@ -44,7 +44,7 @@ const MarketView = ({
             // borderBottomStyle: 'solid',
           }}
         >
-          <Heading as="h1" variant="heading3" sx={{ mb: 4, color: 'white' }}>
+          <Heading as="h1" variant="heading4" sx={{ mb: 4, color: 'white' }}>
             {marketId}
           </Heading>
           <div>
