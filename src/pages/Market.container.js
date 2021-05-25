@@ -132,8 +132,8 @@ const MarketContainer = () => {
     isIndicatorsSettingsPanelVisible,
     setIsIndicatorsSettingsPanelVisible,
   ] = useState(false);
+  const [backTestResult, setBackTestResult] = useState();
   const [backTestEvents, setBackTestEvents] = useState([]);
-  const [backTestProfit, setBackTestProfit] = useState();
   const [backTestBiggestGain, setBackTestBiggestGain] = useState();
   const [backTestBiggestLoss, setBackTestBiggestLoss] = useState();
   const [
@@ -218,7 +218,7 @@ const MarketContainer = () => {
         const data = await fetchData(
           marketId,
           // toSeconds(1, 'hours'),
-          toSeconds(5, 'minutes'),
+          toSeconds(15, 'minutes'),
           // Need to take an hour off start time so we get the candle that
           // the startTime value is a part of.
           startTime - toMilliseconds(1, 'hours'),
@@ -241,7 +241,7 @@ const MarketContainer = () => {
     const profit = calcProfitFromEvents(events);
     console.log('PROFIT', profit);
     setBackTestEvents(events);
-    setBackTestProfit(profit.roi);
+    setBackTestResult(profit);
     setBackTestBiggestGain(profit.biggestGain);
     setBackTestBiggestLoss(profit.biggestLoss);
     setBackTestNumberProfitTrades(profit.numberProfitTrades);
@@ -505,7 +505,6 @@ const MarketContainer = () => {
       backTestBiggestLoss={backTestBiggestGain && backTestBiggestLoss.value}
       backTestNumberProfitTrades={backTestNumberProfitTrades}
       backTestNumberLossTrades={backTestNumberLossTrades}
-      backTestProfit={backTestProfit}
       numBackTestEntries={backTestEvents.reduce(
         (accumulator, currentValue) =>
           currentValue.type === 'entry' ? accumulator + 1 : accumulator,
@@ -518,6 +517,7 @@ const MarketContainer = () => {
       )}
       isBackTestPanelVisible={isBackTestPanelVisible}
       toggleBackTestPanel={toggleBackTestPanel}
+      backTestResult={backTestResult}
     />
   );
 };

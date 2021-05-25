@@ -54,6 +54,9 @@ export const calcProfitFromEvents = (events) => {
   let highestLoss;
   let numProfitTrades = 0;
   let numLossTrades = 0;
+  let totalPercentageGained = 0;
+  let totalPercentageLossed = 0;
+  let profit = 0;
 
   for (const event of events) {
     if (event.type === 'exit') {
@@ -70,15 +73,19 @@ export const calcProfitFromEvents = (events) => {
       const percentageGain =
         percentageMoveInPrice *
         (corrispondingEntryEvent.position === 'long' ? 1 : -1);
+
+      profit = profit + percentageGain;
       const quantityGain = percentageGain * quantity;
       quantity = quantity + quantityGain;
 
       if (percentageGain > 0) {
         numProfitTrades = numProfitTrades + 1;
+        totalPercentageGained = totalPercentageGained + percentageGain;
       }
 
       if (percentageGain < 0) {
         numLossTrades = numLossTrades + 1;
+        totalPercentageLossed = totalPercentageLossed + percentageGain;
       }
 
       if (!highestGain || highestGain.value < percentageGain) {
@@ -107,7 +114,10 @@ export const calcProfitFromEvents = (events) => {
   }
 
   return {
-    roi: quantity - initialQuantity / initialQuantity,
+    profit: profit,
+    compoundProfit: quantity - initialQuantity / initialQuantity,
+    totalPercentageGained: totalPercentageGained,
+    totalPercentageLossed: totalPercentageLossed,
     biggestGain: highestGain,
     biggestLoss: highestLoss,
     numberLossTrades: numLossTrades,

@@ -9,6 +9,7 @@ import { faCoins, faChartLine, faCog } from '@fortawesome/free-solid-svg-icons';
 import MarketChartSidePanel from '../components/MarketChartSidePanel';
 import Text from '../components/generic/Text';
 import DisplayDataItem from '../components/DisplayDataItem';
+import { Fragment } from 'react';
 
 const MarketView = ({
   marketId,
@@ -30,13 +31,13 @@ const MarketView = ({
   focusedDataItem,
   isBackTestPanelVisible,
   toggleBackTestPanel,
-  backTestProfit,
   numBackTestEntries,
   numBackTestExits,
   backTestBiggestGain,
   backTestBiggestLoss,
   backTestNumberProfitTrades,
   backTestNumberLossTrades,
+  backTestResult,
 }) => {
   return (
     <div
@@ -164,34 +165,60 @@ const MarketView = ({
                 <Heading as="h2" variant="heading6" sx={{ mb: 3 }}>
                   Back test
                 </Heading>
-                <DisplayDataItem
-                  label="Profit"
-                  value={`${Math.floor(backTestProfit * 100) / 100}%`}
-                />
-                <DisplayDataItem
-                  label="Number of entries"
-                  value={numBackTestEntries}
-                />
-                <DisplayDataItem
-                  label="Number of exits"
-                  value={numBackTestExits}
-                />
-                <DisplayDataItem
-                  label="Biggest gain"
-                  value={`${Math.floor(backTestBiggestGain * 100) / 100}%`}
-                />
-                <DisplayDataItem
-                  label="Biggest loss"
-                  value={`${Math.floor(backTestBiggestLoss * 100) / 100}%`}
-                />
-                <DisplayDataItem
-                  label="Number of profit trades"
-                  value={backTestNumberProfitTrades}
-                />
-                <DisplayDataItem
-                  label="Number of loss trades"
-                  value={backTestNumberLossTrades}
-                />
+                {backTestResult && (
+                  <Fragment>
+                    <DisplayDataItem
+                      label="Profit"
+                      value={`${
+                        Math.floor(backTestResult.profit * 100) / 100
+                      }%`}
+                    />
+                    <DisplayDataItem
+                      label="Compound profit"
+                      value={`${
+                        Math.floor(backTestResult.compoundProfit * 100) / 100
+                      }%`}
+                    />
+                    <DisplayDataItem
+                      label="Total gained"
+                      value={`${
+                        Math.floor(backTestResult.totalPercentageGained * 100) /
+                        100
+                      }%`}
+                    />
+                    <DisplayDataItem
+                      label="Total lossed"
+                      value={`${
+                        Math.floor(backTestResult.totalPercentageLossed * 100) /
+                        100
+                      }%`}
+                    />
+                    <DisplayDataItem
+                      label="Biggest gain"
+                      value={`${Math.floor(backTestBiggestGain * 100) / 100}%`}
+                    />
+                    <DisplayDataItem
+                      label="Biggest loss"
+                      value={`${Math.floor(backTestBiggestLoss * 100) / 100}%`}
+                    />
+                    <DisplayDataItem
+                      label="Number of entries"
+                      value={numBackTestEntries}
+                    />
+                    <DisplayDataItem
+                      label="Number of exits"
+                      value={numBackTestExits}
+                    />
+                    <DisplayDataItem
+                      label="Number of profit trades"
+                      value={backTestNumberProfitTrades}
+                    />
+                    <DisplayDataItem
+                      label="Number of loss trades"
+                      value={backTestNumberLossTrades}
+                    />
+                  </Fragment>
+                )}
               </MarketChartSidePanel>
             )}
           </Flex>

@@ -42,22 +42,26 @@ const findEntry = (marketData) => {
           latestData.ma200 > latestData.ma100 &&
           emaCrossIndicator.data.type === 'bearish'
         ) {
-          return {
-            price: latestData.close,
-            position: 'short',
-            time: latestData.time,
-            // stopLossPrice: 0.5,
-          };
+          if (latestData.close < latestData.ma100) {
+            return {
+              price: latestData.close,
+              position: 'short',
+              time: latestData.time,
+              // stopLossPrice: 0.5,
+            };
+          }
         } else if (
           latestData.ma200 < latestData.ma100 &&
           emaCrossIndicator.data.type === 'bullish'
         ) {
-          return {
-            price: latestData.close,
-            position: 'long',
-            time: latestData.time,
-            // stopLossPrice: 0.5,
-          };
+          if (latestData.close > latestData.ma100) {
+            return {
+              price: latestData.close,
+              position: 'long',
+              time: latestData.time,
+              // stopLossPrice: 0.5,
+            };
+          }
         }
       }
     }
