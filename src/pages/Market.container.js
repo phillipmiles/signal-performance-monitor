@@ -12,6 +12,10 @@ import {
 } from '../functions/metrics/transformPriceData';
 import { findDataArrayMinimaMaxima } from '../functions/util/findMinimaMaxima';
 import { emaCross } from '../functions/indicators/emaCross';
+import {
+  backTestMarketDataWithStrategy,
+  calcProfitFromEvents,
+} from '../functions/strategies/backTest';
 
 const momentumOffset = 2800;
 const period = 12;
@@ -127,8 +131,13 @@ const MarketContainer = () => {
     isIndicatorsSettingsPanelVisible,
     setIsIndicatorsSettingsPanelVisible,
   ] = useState(false);
+  const [backTestEvents, setBackTestEvents] = useState([]);
+  const [backTestProfit, setBackTestProfit] = useState();
+  const [backTestBiggestGain, setBackTestBiggestGain] = useState();
+  const [backTestBiggestLoss, setBackTestBiggestLoss] = useState();
   const [focusedDataItem, setFocusedDataItem] = useState({});
   const [isInfoPanelVisible, setIsInfoPanelVisible] = useState(false);
+  const [isBackTestPanelVisible, setIsBackTestPanelVisible] = useState(false);
   const [marketData, setMarketData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [calculatedMarketData, setCalculatedMarketData] = useState([]);
@@ -203,6 +212,7 @@ const MarketContainer = () => {
         const data = await fetchData(
           marketId,
           toSeconds(1, 'hours'),
+          // toSeconds(5, 'minutes'),
           // Need to take an hour off start time so we get the candle that
           // the startTime value is a part of.
           startTime - toMilliseconds(1, 'hours'),
@@ -216,6 +226,24 @@ const MarketContainer = () => {
     [],
   );
 
+  const backTestStrategy = useCallback((marketData) => {
+    const events = backTestMarketDataWithStrategy(
+      marketData,
+      'emaCrossStrategy',
+    );
+    console.log('events', events);
+    const profit = calcProfitFromEvents(events);
+    console.log('PROFIT', profit);
+    setBackTestEvents(events);
+    setBackTestProfit(profit.roi);
+    setBackTestBiggestGain(profit.biggestGain);
+    setBackTestBiggestLoss(profit.biggestLoss);
+  }, []);
+
+  useEffect(() => {
+    backTestStrategy(marketData);
+  }, [backTestStrategy, marketData]);
+
   useEffect(() => {
     setIsLoading(true);
     getHistoricalPrices(
@@ -226,7 +254,7 @@ const MarketContainer = () => {
   }, [getHistoricalPrices, apiMarketId]);
 
   useEffect(() => {
-    const calculatedData = emaCross(
+    let calculatedData = emaCross(
       rsiCalculator(
         calcDataArrayMomentum(
           calcDataArrayMomentum(
@@ -376,19 +404,61 @@ const MarketContainer = () => {
       },
     ]);
 
+    calculatedData = calculatedData.map((data) => {
+      // console.log('backTestEvents', backTestEvents);
+      const backtestEvents = backTestEvents.filter(
+        (event) => data.time === event.time,
+      );
+      if (backtestEvents.length > 0) {
+        // console.log(backtestEvents);
+        let backtestData = [];
+        backtestEvents.forEach((event) => {
+          backtestData.push({
+            type: event.type,
+            position: event.position,
+          });
+        });
+
+        // console.log('SAVE', backtestData);
+        return { ...data, backtestEvents: backtestData };
+      } else {
+        return { ...data };
+      }
+    });
     setCalculatedMarketData(calculatedData);
-  }, [marketData]);
+  }, [marketData, backTestEvents]);
 
   const toggleIndicatorsSettingsPanel = useCallback(() => {
+    if (isBackTestPanelVisible) setIsBackTestPanelVisible(false);
     if (isInfoPanelVisible) setIsInfoPanelVisible(false);
     setIsIndicatorsSettingsPanelVisible(!isIndicatorsSettingsPanelVisible);
-  }, [isInfoPanelVisible, isIndicatorsSettingsPanelVisible]);
+  }, [
+    isInfoPanelVisible,
+    isIndicatorsSettingsPanelVisible,
+    isBackTestPanelVisible,
+  ]);
 
   const toggleInfoPanel = useCallback(() => {
+    if (isBackTestPanelVisible) setIsBackTestPanelVisible(false);
     if (isIndicatorsSettingsPanelVisible)
       setIsIndicatorsSettingsPanelVisible(false);
     setIsInfoPanelVisible(!isInfoPanelVisible);
-  }, [isIndicatorsSettingsPanelVisible, isInfoPanelVisible]);
+  }, [
+    isIndicatorsSettingsPanelVisible,
+    isInfoPanelVisible,
+    isBackTestPanelVisible,
+  ]);
+
+  const toggleBackTestPanel = useCallback(() => {
+    if (isInfoPanelVisible) setIsInfoPanelVisible(false);
+    if (isIndicatorsSettingsPanelVisible)
+      setIsIndicatorsSettingsPanelVisible(false);
+    setIsBackTestPanelVisible(!isBackTestPanelVisible);
+  }, [
+    isIndicatorsSettingsPanelVisible,
+    isInfoPanelVisible,
+    isBackTestPanelVisible,
+  ]);
 
   const updateFocusedDataItem = useCallback((dataItem) => {
     setFocusedDataItem(dataItem);
@@ -413,6 +483,21 @@ const MarketContainer = () => {
       toggleInfoPanel={toggleInfoPanel}
       isIndicatorsSettingsPanelVisible={isIndicatorsSettingsPanelVisible}
       toggleIndicatorsSettingsPanel={toggleIndicatorsSettingsPanel}
+      backTestBiggestGain={backTestBiggestGain && backTestBiggestGain.value}
+      backTestBiggestLoss={backTestBiggestGain && backTestBiggestLoss.value}
+      backTestProfit={backTestProfit}
+      numBackTestEntries={backTestEvents.reduce(
+        (accumulator, currentValue) =>
+          currentValue.type === 'entry' ? accumulator + 1 : accumulator,
+        0,
+      )}
+      numBackTestExits={backTestEvents.reduce(
+        (accumulator, currentValue) =>
+          currentValue.type === 'exit' ? accumulator + 1 : accumulator,
+        0,
+      )}
+      isBackTestPanelVisible={isBackTestPanelVisible}
+      toggleBackTestPanel={toggleBackTestPanel}
     />
   );
 };

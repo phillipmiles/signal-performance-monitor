@@ -5,7 +5,7 @@ import MarketChart from '../components/MarketChart';
 import ActivityIndicator from '../components/ActivityIndicator';
 import ButtonIcon from '../components/generic/ButtonIcon';
 import { faChartBar } from '@fortawesome/free-regular-svg-icons';
-import { faInfo, faChartLine, faCog } from '@fortawesome/free-solid-svg-icons';
+import { faCoins, faChartLine, faCog } from '@fortawesome/free-solid-svg-icons';
 import MarketChartSidePanel from '../components/MarketChartSidePanel';
 import Text from '../components/generic/Text';
 import DisplayDataItem from '../components/DisplayDataItem';
@@ -28,6 +28,13 @@ const MarketView = ({
   toggleInfoPanel,
   onHoverCandle,
   focusedDataItem,
+  isBackTestPanelVisible,
+  toggleBackTestPanel,
+  backTestProfit,
+  numBackTestEntries,
+  numBackTestExits,
+  backTestBiggestGain,
+  backTestBiggestLoss,
 }) => {
   return (
     <div
@@ -58,6 +65,13 @@ const MarketView = ({
             {marketId}
           </Heading>
           <div>
+            <ButtonIcon
+              icon={faCoins}
+              onClick={toggleBackTestPanel}
+              ariaLabel="Toggle back test panel"
+              sx={{ ml: 2 }}
+              selected={isBackTestPanelVisible}
+            />
             <ButtonIcon
               icon={faChartLine}
               onClick={toggleInfoPanel}
@@ -129,13 +143,45 @@ const MarketView = ({
                 <Heading as="h2" variant="heading6" sx={{ mt: 4, mb: 3 }}>
                   Analysis
                 </Heading>
+                <DisplayDataItem label="Blah candle type" value="Bearish" />
+                <DisplayDataItem
+                  label="Approaching previous resistance"
+                  value="Bearish"
+                />
               </MarketChartSidePanel>
             )}
             {isIndicatorsSettingsPanelVisible && (
               <MarketChartSidePanel>
-                <Heading as="h2" variant="heading6">
+                <Heading as="h2" variant="heading6" sx={{ mb: 3 }}>
                   Indicators
                 </Heading>
+              </MarketChartSidePanel>
+            )}
+            {isBackTestPanelVisible && (
+              <MarketChartSidePanel>
+                <Heading as="h2" variant="heading6" sx={{ mb: 3 }}>
+                  Back test
+                </Heading>
+                <DisplayDataItem
+                  label="Profit"
+                  value={`${Math.floor(backTestProfit * 100) / 100}%`}
+                />
+                <DisplayDataItem
+                  label="Number of entries"
+                  value={numBackTestEntries}
+                />
+                <DisplayDataItem
+                  label="Number of exits"
+                  value={numBackTestExits}
+                />
+                <DisplayDataItem
+                  label="Biggest gain"
+                  value={`${Math.floor(backTestBiggestGain * 100) / 100}%`}
+                />
+                <DisplayDataItem
+                  label="Biggest loss"
+                  value={`${Math.floor(backTestBiggestLoss * 100) / 100}%`}
+                />
               </MarketChartSidePanel>
             )}
           </Flex>

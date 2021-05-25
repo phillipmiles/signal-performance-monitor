@@ -107,6 +107,30 @@ const MarketChart = ({
     return false;
   };
 
+  const backtestEntryAnnotationWhen = (d) => {
+    if (d.backtestEvents !== undefined) {
+      const entryEvents = d.backtestEvents.filter(
+        (event) => event.type === 'entry',
+      );
+      if (entryEvents.length > 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const backtestExitAnnotationWhen = (d) => {
+    if (d.backtestEvents !== undefined) {
+      const exitEvents = d.backtestEvents.filter(
+        (event) => event.type === 'exit',
+      );
+      if (exitEvents.length > 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const annotation = {
     fill: '#2196f3',
     path: () =>
@@ -115,6 +139,24 @@ const MarketChart = ({
     pathHeight: 22,
     tooltip: 'Go short',
     y: ({ yScale, datum }) => yScale(datum.emaShort),
+  };
+
+  const backTestEntryAnnotation = {
+    fill: '#00DD00',
+    path: () =>
+      'M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z',
+    pathWidth: 12,
+    pathHeight: 22,
+    y: ({ yScale, datum }) => yScale(datum.close),
+  };
+
+  const backTestExitAnnotation = {
+    fill: '#DD0000',
+    path: () =>
+      'M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z',
+    pathWidth: 12,
+    pathHeight: 22,
+    y: ({ yScale, datum }) => yScale(datum.close + datum.close * 0.01),
   };
 
   const pricesDisplayFormat = format('.2f');
@@ -199,10 +241,20 @@ const MarketChart = ({
             onComplete={onDrawTrendComplete}
             trends={trends}
           />
-          <Annotate
+          {/* <Annotate
             with={SvgPathAnnotation}
             usingProps={annotation}
             when={annotationWhen}
+          /> */}
+          <Annotate
+            with={SvgPathAnnotation}
+            usingProps={backTestEntryAnnotation}
+            when={backtestEntryAnnotationWhen}
+          />
+          <Annotate
+            with={SvgPathAnnotation}
+            usingProps={backTestExitAnnotation}
+            when={backtestExitAnnotationWhen}
           />
           <XAxis
             ticks={0}
