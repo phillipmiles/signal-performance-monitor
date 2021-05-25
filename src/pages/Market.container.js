@@ -9,6 +9,7 @@ import { ema, rsi, getMouseCanvas } from 'react-financial-charts';
 import {
   calcDataArrayMomentum,
   calcDataArraySmooth,
+  calcDataArrayMA,
 } from '../functions/metrics/transformPriceData';
 import { findDataArrayMinimaMaxima } from '../functions/util/findMinimaMaxima';
 import { emaCross } from '../functions/indicators/emaCross';
@@ -261,29 +262,39 @@ const MarketContainer = () => {
   }, [getHistoricalPrices, apiMarketId]);
 
   useEffect(() => {
-    let calculatedData = emaCross(
-      rsiCalculator(
-        calcDataArrayMomentum(
-          calcDataArrayMomentum(
-            emaLong(
-              calcDataArraySmooth(
-                emaDouble(emaShort(marketData)),
+    let calculatedData = calcDataArrayMA(
+      calcDataArrayMA(
+        emaCross(
+          rsiCalculator(
+            calcDataArrayMomentum(
+              calcDataArrayMomentum(
+                emaLong(
+                  calcDataArraySmooth(
+                    emaDouble(emaShort(marketData)),
+                    period / 2,
+                    'close',
+                    'smooth',
+                  ),
+                ),
                 period / 2,
-                'close',
-                'smooth',
+                'smooth', // USE smooth OR emaDouble
+                'momentum1',
               ),
+              period / 2,
+              'momentum1',
+              'momentum2',
             ),
-            period / 2,
-            'smooth', // USE smooth OR emaDouble
-            'momentum1',
           ),
-          period / 2,
-          'momentum1',
-          'momentum2',
+          'emaShort',
+          'emaLong',
         ),
+        100,
+        'close',
+        'ma100',
       ),
-      'emaShort',
-      'emaLong',
+      200,
+      'close',
+      'ma200',
     );
 
     console.log('DATA', calculatedData);

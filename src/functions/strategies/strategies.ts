@@ -1,6 +1,7 @@
 // import { toMilliseconds, toSeconds } from '../util/time';
 import { ema } from 'react-financial-charts';
 import { emaCross } from '../indicators/emaCross';
+import { calcDataArrayMA } from '../metrics/transformPriceData';
 
 const findEntry = (marketData) => {
   const emaShort = ema()
@@ -18,10 +19,16 @@ const findEntry = (marketData) => {
     })
     .accessor((d) => d.emaLong);
 
-  const calculatedData = emaCross(
-    emaLong(emaShort(marketData)),
-    'emaShort',
-    'emaLong',
+  const calculatedData = calcDataArrayMA(
+    calcDataArrayMA(
+      emaCross(emaLong(emaShort(marketData)), 'emaShort', 'emaLong'),
+      100,
+      'close',
+      'ma100',
+    ),
+    200,
+    'close',
+    'ma200',
   );
 
   if (calculatedData.length > 0) {
@@ -31,13 +38,27 @@ const findEntry = (marketData) => {
         (indicator) => indicator.id === 'ema-cross',
       );
       if (emaCrossIndicator) {
-        return {
-          price: latestData.close,
-          position:
-            emaCrossIndicator.data.type === 'bullish' ? 'long' : 'short',
-          time: latestData.time,
-          // stopLossPrice: 0.5,
-        };
+        if (
+          latestData.ma200 > latestData.ma100 &&
+          emaCrossIndicator.data.type === 'bearish'
+        ) {
+          return {
+            price: latestData.close,
+            position: 'short',
+            time: latestData.time,
+            // stopLossPrice: 0.5,
+          };
+        } else if (
+          latestData.ma200 < latestData.ma100 &&
+          emaCrossIndicator.data.type === 'bullish'
+        ) {
+          return {
+            price: latestData.close,
+            position: 'long',
+            time: latestData.time,
+            // stopLossPrice: 0.5,
+          };
+        }
       }
     }
   }

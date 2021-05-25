@@ -1,3 +1,5 @@
+import { calculateMA } from '../metrics/ma';
+
 // Adds smoothened value to a market price data array by averaging a price in time by the
 // neighbouring price points where number of neighbouring points used either side of a price
 // is dictated by the 'smoothFactor'. A larger smoothFactor = more points used in averaging
@@ -53,5 +55,26 @@ export const calcMomentum = (array, period) => {
     if (i < period || array[i - period] === null) return null;
 
     return val - array[i - period];
+  });
+};
+
+export const calcDataArrayMA = (
+  dataArray: any[],
+  period: number,
+  key: string,
+  id?: string,
+): any[] => {
+  return dataArray.map((priceData, i) => {
+    if (i < period || !priceData[key]) return priceData;
+
+    const observableData = dataArray.slice(i - period, i);
+    const total = observableData.reduce(
+      (total: number, item) => total + item[key],
+      0,
+    );
+
+    const ma = total / observableData.length;
+
+    return { ...priceData, [id ? id : 'ma']: ma };
   });
 };
