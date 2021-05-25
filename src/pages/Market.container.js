@@ -135,6 +135,11 @@ const MarketContainer = () => {
   const [backTestProfit, setBackTestProfit] = useState();
   const [backTestBiggestGain, setBackTestBiggestGain] = useState();
   const [backTestBiggestLoss, setBackTestBiggestLoss] = useState();
+  const [
+    backTestNumberProfitTrades,
+    setBackTestNumberProfitTrades,
+  ] = useState();
+  const [backTestNumberLossTrades, setBackTestNumberLossTrades] = useState();
   const [focusedDataItem, setFocusedDataItem] = useState({});
   const [isInfoPanelVisible, setIsInfoPanelVisible] = useState(false);
   const [isBackTestPanelVisible, setIsBackTestPanelVisible] = useState(false);
@@ -211,8 +216,8 @@ const MarketContainer = () => {
       try {
         const data = await fetchData(
           marketId,
-          toSeconds(1, 'hours'),
-          // toSeconds(5, 'minutes'),
+          // toSeconds(1, 'hours'),
+          toSeconds(5, 'minutes'),
           // Need to take an hour off start time so we get the candle that
           // the startTime value is a part of.
           startTime - toMilliseconds(1, 'hours'),
@@ -238,6 +243,8 @@ const MarketContainer = () => {
     setBackTestProfit(profit.roi);
     setBackTestBiggestGain(profit.biggestGain);
     setBackTestBiggestLoss(profit.biggestLoss);
+    setBackTestNumberProfitTrades(profit.numberProfitTrades);
+    setBackTestNumberLossTrades(profit.numberLossTrades);
   }, []);
 
   useEffect(() => {
@@ -485,6 +492,8 @@ const MarketContainer = () => {
       toggleIndicatorsSettingsPanel={toggleIndicatorsSettingsPanel}
       backTestBiggestGain={backTestBiggestGain && backTestBiggestGain.value}
       backTestBiggestLoss={backTestBiggestGain && backTestBiggestLoss.value}
+      backTestNumberProfitTrades={backTestNumberProfitTrades}
+      backTestNumberLossTrades={backTestNumberLossTrades}
       backTestProfit={backTestProfit}
       numBackTestEntries={backTestEvents.reduce(
         (accumulator, currentValue) =>

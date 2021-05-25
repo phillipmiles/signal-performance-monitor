@@ -35,6 +35,8 @@ const MarketView = ({
   numBackTestExits,
   backTestBiggestGain,
   backTestBiggestLoss,
+  backTestNumberProfitTrades,
+  backTestNumberLossTrades,
 }) => {
   return (
     <div
@@ -181,6 +183,14 @@ const MarketView = ({
                 <DisplayDataItem
                   label="Biggest loss"
                   value={`${Math.floor(backTestBiggestLoss * 100) / 100}%`}
+                />
+                <DisplayDataItem
+                  label="Number of profit trades"
+                  value={backTestNumberProfitTrades}
+                />
+                <DisplayDataItem
+                  label="Number of loss trades"
+                  value={backTestNumberLossTrades}
                 />
               </MarketChartSidePanel>
             )}
