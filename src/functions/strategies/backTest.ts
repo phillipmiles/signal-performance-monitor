@@ -11,14 +11,12 @@ export const backTestMarketDataWithStrategy = (marketData, stategyId) => {
   marketData.forEach((data, index) => {
     if (events.length !== 0 && events[events.length - 1].type === 'entry') {
       // const target = strategy.findTarget(marketData);
-      console.log('check inval');
       const invalidation = strategy.findInvalidation(
         marketData.slice(0, index),
         events[events.length - 1],
       );
 
       if (invalidation) {
-        console.log('savingin inval');
         events.push({
           type: 'exit',
           position: invalidation.position,
@@ -29,10 +27,8 @@ export const backTestMarketDataWithStrategy = (marketData, stategyId) => {
     }
 
     if (events.length === 0 || events[events.length - 1].type !== 'entry') {
-      console.log('fin entry');
       const entry = strategy.findEntry(marketData.slice(0, index));
       if (entry) {
-        console.log('saving entry');
         events.push({
           type: 'entry',
           position: entry.position,
@@ -43,7 +39,6 @@ export const backTestMarketDataWithStrategy = (marketData, stategyId) => {
       }
     }
   });
-  console.log('e', events);
   return events;
 };
 

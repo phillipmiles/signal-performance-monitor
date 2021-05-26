@@ -217,7 +217,7 @@ const MarketContainer = () => {
         const data = await fetchData(
           marketId,
           // toSeconds(1, 'hours'),
-          toSeconds(5, 'minutes'),
+          toSeconds(15, 'minutes'),
           // Need to take an hour off start time so we get the candle that
           // the startTime value is a part of.
           startTime - toMilliseconds(1, 'hours'),
@@ -234,7 +234,8 @@ const MarketContainer = () => {
   const backTestStrategy = useCallback((marketData) => {
     const events = backTestMarketDataWithStrategy(
       marketData,
-      'emaCrossStrategy',
+      // 'emaCrossStrategy',
+      'emaCrossRetraceToMaStrategy',
     );
     console.log('events', events);
     const profit = calcProfitFromEvents(events);
@@ -261,248 +262,252 @@ const MarketContainer = () => {
   }, [getHistoricalPrices, apiMarketId]);
 
   useEffect(() => {
-    let calculatedData = calcDataArrayMA(
-      calcDataArrayMA(
-        emaCross(
-          rsiCalculator(
-            calcDataArrayMomentum(
+    const fillData = async () => {
+      let calculatedData = calcDataArrayMA(
+        calcDataArrayMA(
+          emaCross(
+            rsiCalculator(
               calcDataArrayMomentum(
-                emaLong(
-                  calcDataArraySmooth(
-                    emaDouble(emaShort(marketData)),
-                    period / 2,
-                    'close',
-                    'smooth',
+                calcDataArrayMomentum(
+                  emaLong(
+                    calcDataArraySmooth(
+                      emaDouble(emaShort(marketData)),
+                      period / 2,
+                      'close',
+                      'smooth',
+                    ),
                   ),
+                  period / 2,
+                  'smooth', // USE smooth OR emaDouble
+                  'momentum1',
                 ),
                 period / 2,
-                'smooth', // USE smooth OR emaDouble
                 'momentum1',
+                'momentum2',
               ),
-              period / 2,
-              'momentum1',
-              'momentum2',
             ),
+            'emaShort',
+            'emaLong',
           ),
-          'emaShort',
-          'emaLong',
+          100,
+          'close',
+          'ma100',
         ),
-        100,
+        200,
         'close',
-        'ma100',
-      ),
-      200,
-      'close',
-      'ma200',
-    );
+        'ma200',
+      );
 
-    console.log('DATA', calculatedData);
+      console.log('DATA', calculatedData);
 
-    const { minima, maxima } = findDataArrayMinimaMaxima(
-      calculatedData,
-      'momentum1',
-      'momentum2',
-    );
+      const { minima, maxima } = findDataArrayMinimaMaxima(
+        calculatedData,
+        'momentum1',
+        'momentum2',
+      );
 
-    const correctedHighs = correctHighs(calculatedData, maxima, period / 2);
-    const correctedLows = correctLows(calculatedData, minima, period / 2);
+      const correctedHighs = correctHighs(calculatedData, maxima, period / 2);
+      const correctedLows = correctLows(calculatedData, minima, period / 2);
 
-    const combineLowsAndHighs = [...correctedLows, ...correctedHighs];
-    const lowHighsWithStrength = combineLowsAndHighs.map((item) => {
-      let numNear = 0;
-      let sumNear = 0;
-      combineLowsAndHighs.forEach((itemCompare) => {
-        if (itemCompare.index === item.index) return;
+      const combineLowsAndHighs = [...correctedLows, ...correctedHighs];
+      const lowHighsWithStrength = combineLowsAndHighs.map((item) => {
+        let numNear = 0;
+        let sumNear = 0;
+        combineLowsAndHighs.forEach((itemCompare) => {
+          if (itemCompare.index === item.index) return;
 
-        if (
-          itemCompare.value < item.value + item.value * 0.015 &&
-          itemCompare.value > item.value - item.value * 0.015
-        ) {
-          // console.log(itemCompare[1], item[1]);
-          // console.log('new num', indexCompare, numNear);
-          numNear = numNear + 1;
-          sumNear = sumNear + itemCompare.value;
-          // HOW AND WHERE AM I STORING UBER LINES!!?!?
-        }
+          if (
+            itemCompare.value < item.value + item.value * 0.015 &&
+            itemCompare.value > item.value - item.value * 0.015
+          ) {
+            // console.log(itemCompare[1], item[1]);
+            // console.log('new num', indexCompare, numNear);
+            numNear = numNear + 1;
+            sumNear = sumNear + itemCompare.value;
+            // HOW AND WHERE AM I STORING UBER LINES!!?!?
+          }
+        });
+        // console.log('nn', numNear);
+        return {
+          index: item.index,
+          value: item.value,
+          // value2: item[2],
+          numNear: numNear,
+          avgLine: sumNear / numNear,
+        };
       });
-      // console.log('nn', numNear);
-      return {
-        index: item.index,
-        value: item.value,
-        // value2: item[2],
-        numNear: numNear,
-        avgLine: sumNear / numNear,
-      };
-    });
 
-    console.log(
-      'lowHighsWithStrength',
-      combineLowsAndHighs,
-      lowHighsWithStrength,
-    );
+      console.log(
+        'lowHighsWithStrength',
+        combineLowsAndHighs,
+        lowHighsWithStrength,
+      );
 
-    const linesToSave = [];
+      const linesToSave = [];
 
-    lowHighsWithStrength.forEach((level) => {
-      // const yPos = level.avgLine ? level.avgLine : level.value;
-      const yPos = level.value;
-      // if(level.numNear < 1) return;
-      linesToSave.push(
+      lowHighsWithStrength.forEach((level) => {
+        // const yPos = level.avgLine ? level.avgLine : level.value;
+        const yPos = level.value;
+        // if(level.numNear < 1) return;
+        linesToSave.push(
+          {
+            // type: level.numNear > 6 ? 'RAY' : 'LINE',
+            type: 'LINE',
+            selected: false,
+            // Size of x axies is from 0 to number of data points.
+            start: [level.index, yPos],
+            end: [level.index + 10, yPos],
+            appearance: {
+              edgeFill: '#FFFFFF',
+              edgeStroke: '#000000',
+              edgeStrokeWidth: 1,
+              r: 6,
+              strokeDasharray: 'Solid',
+              strokeStyle:
+                level.numNear < 1
+                  ? '#DDDDDD'
+                  : level.numNear > 6
+                  ? level.numNear > 16
+                    ? '#000000'
+                    : '#888888'
+                  : '#AAAAAA',
+              strokeWidth: 3,
+            },
+          },
+          // Add close/open line as well
+          // {
+          //   type: 'LINE',
+          //   selected: false,
+          //   // Size of x axies is from 0 to number of data points.
+          //   start: [level.index, level.value2],
+          //   end: [level.index + 10, level.value2],
+          //   appearance: {
+          //     edgeFill: '#FFFFFF',
+          //     edgeStroke: '#000000',
+          //     edgeStrokeWidth: 1,
+          //     r: 6,
+          //     strokeDasharray: 'Solid',
+          //     strokeStyle:
+          //       level.numNear < 1
+          //         ? '#DDDDDD'
+          //         : level.numNear > 6
+          //         ? level.numNear > 16
+          //           ? '#000000'
+          //           : '#888888'
+          //         : '#AAAAAA',
+          //     strokeWidth: 3,
+          //   },
+          // },
+        );
+      });
+
+      setTrends([
+        ...linesToSave,
+        // ...highsToSave,
+        // ...lowsToSave,
         {
-          // type: level.numNear > 6 ? 'RAY' : 'LINE',
-          type: 'LINE',
+          type: 'RAY',
           selected: false,
           // Size of x axies is from 0 to number of data points.
-          start: [level.index, yPos],
-          end: [level.index + 10, yPos],
+          start: [0, momentumOffset],
+          end: [168, momentumOffset],
           appearance: {
             edgeFill: '#FFFFFF',
             edgeStroke: '#000000',
             edgeStrokeWidth: 1,
             r: 6,
             strokeDasharray: 'Solid',
-            strokeStyle:
-              level.numNear < 1
-                ? '#DDDDDD'
-                : level.numNear > 6
-                ? level.numNear > 16
-                  ? '#000000'
-                  : '#888888'
-                : '#AAAAAA',
-            strokeWidth: 3,
+            strokeStyle: '#000000',
+            strokeWidth: 1,
           },
         },
-        // Add close/open line as well
-        // {
-        //   type: 'LINE',
-        //   selected: false,
-        //   // Size of x axies is from 0 to number of data points.
-        //   start: [level.index, level.value2],
-        //   end: [level.index + 10, level.value2],
-        //   appearance: {
-        //     edgeFill: '#FFFFFF',
-        //     edgeStroke: '#000000',
-        //     edgeStrokeWidth: 1,
-        //     r: 6,
-        //     strokeDasharray: 'Solid',
-        //     strokeStyle:
-        //       level.numNear < 1
-        //         ? '#DDDDDD'
-        //         : level.numNear > 6
-        //         ? level.numNear > 16
-        //           ? '#000000'
-        //           : '#888888'
-        //         : '#AAAAAA',
-        //     strokeWidth: 3,
-        //   },
-        // },
-      );
-    });
+      ]);
 
-    setTrends([
-      ...linesToSave,
-      // ...highsToSave,
-      // ...lowsToSave,
-      {
-        type: 'RAY',
-        selected: false,
-        // Size of x axies is from 0 to number of data points.
-        start: [0, momentumOffset],
-        end: [168, momentumOffset],
-        appearance: {
-          edgeFill: '#FFFFFF',
-          edgeStroke: '#000000',
-          edgeStrokeWidth: 1,
-          r: 6,
-          strokeDasharray: 'Solid',
-          strokeStyle: '#000000',
-          strokeWidth: 1,
-        },
-      },
-    ]);
+      // Add trades
+      let lastEventIndex = 0;
 
-    // Add trades
-    let lastEventIndex = 0;
+      const newData = [...calculatedData];
+      // Get event index within market data array.
+      const backtestEventsWithIndex = backTestEvents.map((event) => {
+        const dataIndex = calculatedData.findIndex(
+          (data) => data.time === event.time,
+        );
 
-    const newData = [...calculatedData];
-    // Get event index within market data array.
-    const backtestEventsWithIndex = backTestEvents.map((event) => {
-      const dataIndex = calculatedData.findIndex(
-        (data) => data.time === event.time,
-      );
+        return { ...event, index: dataIndex };
+      });
 
-      return { ...event, index: dataIndex };
-    });
-
-    backtestEventsWithIndex.forEach((event, index) => {
-      let profit = 0;
-      if (
-        event.type === 'entry' &&
-        backtestEventsWithIndex.length > index + 1
-      ) {
-        if (event.position === 'long') {
-          profit =
-            newData[backtestEventsWithIndex[index + 1].index].close -
-            newData[event.index].close;
-        } else {
-          profit =
-            newData[event.index].close -
-            newData[backtestEventsWithIndex[index + 1].index].close;
+      backtestEventsWithIndex.forEach((event, index) => {
+        let profit = 0;
+        if (
+          event.type === 'entry' &&
+          backtestEventsWithIndex.length > index + 1
+        ) {
+          if (event.position === 'long') {
+            profit =
+              newData[backtestEventsWithIndex[index + 1].index].close -
+              newData[event.index].close;
+          } else {
+            profit =
+              newData[event.index].close -
+              newData[backtestEventsWithIndex[index + 1].index].close;
+          }
+        } else if (event.type === 'exit') {
+          if (event.position === 'long') {
+            profit =
+              newData[event.index].close -
+              newData[backtestEventsWithIndex[index - 1].index].close;
+          } else {
+            profit =
+              newData[backtestEventsWithIndex[index - 1].index].close -
+              newData[event.index].close;
+          }
         }
-      } else if (event.type === 'exit') {
-        if (event.position === 'long') {
-          profit =
-            newData[event.index].close -
-            newData[backtestEventsWithIndex[index - 1].index].close;
+        const eventData = {
+          type: event.type,
+          position: event.position,
+          profit: profit,
+        };
+
+        if (!newData[event.index].backtestEvents) {
+          newData[event.index].backtestEvents = [eventData];
         } else {
-          profit =
-            newData[backtestEventsWithIndex[index - 1].index].close -
-            newData[event.index].close;
+          newData[event.index].backtestEvents.push(eventData);
         }
-      }
-      const eventData = {
-        type: event.type,
-        position: event.position,
-        profit: profit,
-      };
-      console.log(eventData);
-      if (!newData[event.index].backtestEvents) {
-        newData[event.index].backtestEvents = [eventData];
-      } else {
-        newData[event.index].backtestEvents.push(eventData);
-      }
-    });
+      });
 
-    // calculatedData = calculatedData.map((data, dataIndex) => {
-    //   // console.log('backTestEvents', backTestEvents);
-    //   const backtestEvents = backTestEvents.filter(
-    //     (event) => data.time === event.time,
-    //   );
-    //   if (backtestEvents.length > 0) {
-    //     // console.log(backtestEvents);
-    //     let backtestData = [];
-    //     backtestEvents.forEach((event, index) => {
-    //       let profit = 0;
-    //       if (event.type === 'buy') {
-    //          backtestEvents[index + 1];
-    //       }
-    //       // if (event.position === 'long') {
-    //       //   profit = profit * -1;
-    //       // }
-    //       backtestData.push({
-    //         type: event.type,
-    //         position: event.position,
-    //         profit: profit,
-    //       });
-    //     });
+      // calculatedData = calculatedData.map((data, dataIndex) => {
+      //   // console.log('backTestEvents', backTestEvents);
+      //   const backtestEvents = backTestEvents.filter(
+      //     (event) => data.time === event.time,
+      //   );
+      //   if (backtestEvents.length > 0) {
+      //     // console.log(backtestEvents);
+      //     let backtestData = [];
+      //     backtestEvents.forEach((event, index) => {
+      //       let profit = 0;
+      //       if (event.type === 'buy') {
+      //          backtestEvents[index + 1];
+      //       }
+      //       // if (event.position === 'long') {
+      //       //   profit = profit * -1;
+      //       // }
+      //       backtestData.push({
+      //         type: event.type,
+      //         position: event.position,
+      //         profit: profit,
+      //       });
+      //     });
 
-    //     // console.log('SAVE', backtestData);
-    //     return { ...data, backtestEvents: backtestData };
-    //   } else {
-    //     return { ...data };
-    //   }
-    // });
-    setCalculatedMarketData(newData);
+      //     // console.log('SAVE', backtestData);
+      //     return { ...data, backtestEvents: backtestData };
+      //   } else {
+      //     return { ...data };
+      //   }
+      // });
+      setCalculatedMarketData(newData);
+    };
+
+    fillData();
   }, [marketData, backTestEvents]);
 
   const toggleIndicatorsSettingsPanel = useCallback(() => {

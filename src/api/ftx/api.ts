@@ -80,16 +80,25 @@ const getHistoricalPrices = async (
   resolution: number,
   start_time: number,
 ) => {
-  console.log(marketId, resolution, start_time);
   const response = await axios.get(
     `http://localhost:3000/markets/${marketId}/candles`,
     {
       params: {
         start_time: toSeconds(start_time, 'milliseconds'),
         resolution: resolution,
+        limit: 5000,
       },
     },
   );
+  // const response = await axios.get(
+  //   `http://localhost:3000/markets/${marketId}/candles`,
+  //   {
+  //     params: {
+  //       start_time: toSeconds(start_time, 'milliseconds'),
+  //       resolution: resolution,
+  //     },
+  //   },
+  // );
   return response;
 };
 
