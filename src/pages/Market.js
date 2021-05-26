@@ -10,6 +10,7 @@ import MarketChartSidePanel from '../components/MarketChartSidePanel';
 import Text from '../components/generic/Text';
 import DisplayDataItem from '../components/DisplayDataItem';
 import { Fragment } from 'react';
+import Candle from '../components/Candle';
 
 const MarketView = ({
   marketId,
@@ -119,26 +120,50 @@ const MarketView = ({
                 <Heading as="h2" variant="heading6" sx={{ mb: 3 }}>
                   Info
                 </Heading>
-                <DisplayDataItem
-                  label="High"
-                  value={`$${focusedDataItem.high}`}
-                />
-                <DisplayDataItem
-                  label="Low"
-                  value={`$${focusedDataItem.low}`}
-                />
-                <DisplayDataItem
-                  label="Open"
-                  value={`$${focusedDataItem.open}`}
-                />
-                <DisplayDataItem
-                  label="Close"
-                  value={`$${focusedDataItem.close}`}
-                />
-                <DisplayDataItem
-                  label="Volume"
-                  value={Math.floor(focusedDataItem.volume)}
-                />
+                <Flex>
+                  <Flex
+                    sx={{
+                      flexGrow: 1,
+                      maxWidth: '50%',
+                      bg: '#161D25',
+                      mr: 2,
+                      py: 2,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Candle
+                      high={focusedDataItem.high}
+                      low={focusedDataItem.low}
+                      open={focusedDataItem.open}
+                      close={focusedDataItem.close}
+                    />
+                  </Flex>
+                  <div sx={{ flexGrow: 1, maxWidth: '50%', ml: 2 }}>
+                    <DisplayDataItem
+                      label="High"
+                      value={`$${focusedDataItem.high}`}
+                    />
+                    <DisplayDataItem
+                      label="Low"
+                      value={`$${focusedDataItem.low}`}
+                    />
+                    <DisplayDataItem
+                      label="Open"
+                      value={`$${focusedDataItem.open}`}
+                    />
+                    <DisplayDataItem
+                      label="Close"
+                      value={`$${focusedDataItem.close}`}
+                    />
+                    <DisplayDataItem
+                      label="Volume"
+                      value={Math.floor(focusedDataItem.volume)}
+                    />
+                    <DisplayDataItem label="Candle type" value={`???`} />
+                  </div>
+                </Flex>
+
                 <Heading as="h2" variant="heading6" sx={{ mt: 4, mb: 3 }}>
                   Indicators
                 </Heading>
