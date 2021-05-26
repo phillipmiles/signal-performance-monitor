@@ -38,6 +38,7 @@ const findEntry = (marketData) => {
         (indicator) => indicator.id === 'ema-cross',
       );
       if (emaCrossIndicator) {
+        // if (emaCrossIndicator.data.type === 'bearish') {
         if (
           latestData.ma200 > latestData.ma100 &&
           emaCrossIndicator.data.type === 'bearish'
@@ -50,6 +51,7 @@ const findEntry = (marketData) => {
               // stopLossPrice: 0.5,
             };
           }
+          // } else if (emaCrossIndicator.data.type === 'bullish') {
         } else if (
           latestData.ma200 < latestData.ma100 &&
           emaCrossIndicator.data.type === 'bullish'
@@ -106,6 +108,7 @@ const findInvalidation = (marketData, entry) => {
         ) {
           return {
             price: latestData.close,
+            position: entry.position,
             volume: 'all of it',
             time: latestData.time,
           };
@@ -115,6 +118,7 @@ const findInvalidation = (marketData, entry) => {
         ) {
           return {
             price: latestData.close,
+            position: entry.position,
             volume: 'all of it',
             time: latestData.time,
           };

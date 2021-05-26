@@ -21,6 +21,7 @@ export const backTestMarketDataWithStrategy = (marketData, stategyId) => {
         console.log('savingin inval');
         events.push({
           type: 'exit',
+          position: invalidation.position,
           price: invalidation.price,
           time: invalidation.time,
         });
@@ -34,8 +35,8 @@ export const backTestMarketDataWithStrategy = (marketData, stategyId) => {
         console.log('saving entry');
         events.push({
           type: 'entry',
-          price: entry.price,
           position: entry.position,
+          price: entry.price,
           time: entry.time,
           // stopLossPrice: entry.stopLossPrice,
         });

@@ -205,7 +205,6 @@ const MarketContainer = () => {
           data[data.length - 1].time <
           new Date().getTime() - toMilliseconds(1, 'hours')
         ) {
-          console.log('do a thing');
           data.push(
             await fetchData(marketId, resolution, data[data.length - 1].time),
           );
@@ -218,7 +217,7 @@ const MarketContainer = () => {
         const data = await fetchData(
           marketId,
           // toSeconds(1, 'hours'),
-          toSeconds(15, 'minutes'),
+          toSeconds(5, 'minutes'),
           // Need to take an hour off start time so we get the candle that
           // the startTime value is a part of.
           startTime - toMilliseconds(1, 'hours'),
@@ -422,28 +421,85 @@ const MarketContainer = () => {
       },
     ]);
 
-    calculatedData = calculatedData.map((data) => {
-      // console.log('backTestEvents', backTestEvents);
-      const backtestEvents = backTestEvents.filter(
-        (event) => data.time === event.time,
-      );
-      if (backtestEvents.length > 0) {
-        // console.log(backtestEvents);
-        let backtestData = [];
-        backtestEvents.forEach((event) => {
-          backtestData.push({
-            type: event.type,
-            position: event.position,
-          });
-        });
+    // Add trades
+    let lastEventIndex = 0;
 
-        // console.log('SAVE', backtestData);
-        return { ...data, backtestEvents: backtestData };
+    const newData = [...calculatedData];
+    // Get event index within market data array.
+    const backtestEventsWithIndex = backTestEvents.map((event) => {
+      const dataIndex = calculatedData.findIndex(
+        (data) => data.time === event.time,
+      );
+
+      return { ...event, index: dataIndex };
+    });
+
+    backtestEventsWithIndex.forEach((event, index) => {
+      let profit = 0;
+      if (event.type === 'entry') {
+        if (event.position === 'long') {
+          profit =
+            newData[backtestEventsWithIndex[index + 1].index].close -
+            newData[event.index].close;
+        } else {
+          profit =
+            newData[event.index].close -
+            newData[backtestEventsWithIndex[index + 1].index].close;
+        }
+      } else if (event.type === 'exit') {
+        if (event.position === 'long') {
+          profit =
+            newData[event.index].close -
+            newData[backtestEventsWithIndex[index - 1].index].close;
+        } else {
+          profit =
+            newData[backtestEventsWithIndex[index - 1].index].close -
+            newData[event.index].close;
+        }
+      }
+      const eventData = {
+        type: event.type,
+        position: event.position,
+        profit: profit,
+      };
+      console.log(eventData);
+      if (!newData[event.index].backtestEvents) {
+        newData[event.index].backtestEvents = [eventData];
       } else {
-        return { ...data };
+        newData[event.index].backtestEvents.push(eventData);
       }
     });
-    setCalculatedMarketData(calculatedData);
+
+    // calculatedData = calculatedData.map((data, dataIndex) => {
+    //   // console.log('backTestEvents', backTestEvents);
+    //   const backtestEvents = backTestEvents.filter(
+    //     (event) => data.time === event.time,
+    //   );
+    //   if (backtestEvents.length > 0) {
+    //     // console.log(backtestEvents);
+    //     let backtestData = [];
+    //     backtestEvents.forEach((event, index) => {
+    //       let profit = 0;
+    //       if (event.type === 'buy') {
+    //          backtestEvents[index + 1];
+    //       }
+    //       // if (event.position === 'long') {
+    //       //   profit = profit * -1;
+    //       // }
+    //       backtestData.push({
+    //         type: event.type,
+    //         position: event.position,
+    //         profit: profit,
+    //       });
+    //     });
+
+    //     // console.log('SAVE', backtestData);
+    //     return { ...data, backtestEvents: backtestData };
+    //   } else {
+    //     return { ...data };
+    //   }
+    // });
+    setCalculatedMarketData(newData);
   }, [marketData, backTestEvents]);
 
   const toggleIndicatorsSettingsPanel = useCallback(() => {

@@ -142,12 +142,23 @@ const MarketChart = ({
   };
 
   const backTestEntryAnnotation = {
-    fill: '#00DD00',
+    // fill: '#00DD00',
+    fill: (data) => {
+      console.log(data.backtestEvents);
+      const entryEvent = data.backtestEvents.find(
+        (event) => event.type === 'entry',
+      );
+      console.log(entryEvent);
+      if (entryEvent.profit < 0) {
+        return '#DD0000';
+      } else {
+        return '#00DD00';
+      }
+    },
     path: (data, data2) => {
       const emaIndicator = data.indicators.find(
         (indicators) => indicators.id === 'ema-cross',
       );
-      // console.log('ARE WE ANYTHING', emaIndicator);
       if (emaIndicator.data.type === 'bullish') {
         return 'M0.3125 10.5C0.3125 15.8516 4.64844 20.1875 10 20.1875C15.3516 20.1875 19.6875 15.8516 19.6875 10.5C19.6875 5.14844 15.3516 0.8125 10 0.8125C4.64844 0.8125 0.3125 5.14844 0.3125 10.5ZM5.89844 11.6328C5.54688 12.0234 4.92188 12.0234 4.57031 11.6719L4.14062 11.2422C3.75 10.8516 3.75 10.2656 4.14062 9.91406L9.33594 4.71875C9.6875 4.36719 10.2734 4.36719 10.6641 4.71875L15.8203 9.91406C16.2109 10.2656 16.2109 10.8516 15.8203 11.2422L15.3906 11.6719C15.0391 12.0234 14.4141 12.0234 14.0625 11.6328L11.25 8.70312V15.8125C11.25 16.3594 10.8203 16.75 10.3125 16.75H9.6875C9.14062 16.75 8.75 16.3594 8.75 15.8125V8.70312L5.89844 11.6328Z';
       } else {
@@ -160,7 +171,18 @@ const MarketChart = ({
   };
 
   const backTestExitAnnotation = {
-    fill: '#DD0000',
+    fill: (data) => {
+      const exitEvent = data.backtestEvents.find(
+        (event) => event.type === 'exit',
+      );
+
+      if (exitEvent.profit < 0) {
+        return '#DD0000';
+      } else {
+        return '#00DD00';
+      }
+    },
+
     path: () =>
       'M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z',
     pathWidth: 12,
