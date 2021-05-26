@@ -38,32 +38,33 @@ const findEntry = (marketData) => {
         (indicator) => indicator.id === 'ema-cross',
       );
       if (emaCrossIndicator) {
-        // if (emaCrossIndicator.data.type === 'bearish') {
-        if (
-          latestData.ma200 > latestData.ma100 &&
-          emaCrossIndicator.data.type === 'bearish'
-        ) {
-          if (latestData.close < latestData.ma100) {
-            return {
-              price: latestData.close,
-              position: 'short',
-              time: latestData.time,
-              // stopLossPrice: 0.5,
-            };
-          }
-          // } else if (emaCrossIndicator.data.type === 'bullish') {
-        } else if (
-          latestData.ma200 < latestData.ma100 &&
-          emaCrossIndicator.data.type === 'bullish'
-        ) {
-          if (latestData.close > latestData.ma100) {
-            return {
-              price: latestData.close,
-              position: 'long',
-              time: latestData.time,
-              // stopLossPrice: 0.5,
-            };
-          }
+        if (emaCrossIndicator.data.type === 'bearish') {
+          // if (
+          //   latestData.ma200 > latestData.ma100 &&
+          //   emaCrossIndicator.data.type === 'bearish'
+          // ) {
+          // if (latestData.close < latestData.ma100) {
+          return {
+            price: latestData.close,
+            position: 'short',
+            time: latestData.time,
+            // stopLossPrice: 0.5,
+          };
+          // }
+        } else if (emaCrossIndicator.data.type === 'bullish') {
+          // } else if (
+          //   latestData.ma200 < latestData.ma100 &&
+          //   emaCrossIndicator.data.type === 'bullish'
+          // ) {
+          // if (latestData.close > latestData.ma100) {
+          return {
+            price: latestData.close,
+            position: 'long',
+            time: latestData.time,
+            // stopLossPrice: 0.5,
+          };
+          // }
+          // }
         }
       }
     }
@@ -96,12 +97,10 @@ const findInvalidation = (marketData, entry) => {
   if (calculatedData.length > 0) {
     const latestData = calculatedData[calculatedData.length - 1];
     if (latestData.indicators !== undefined) {
-      console.log('calculatedData', calculatedData);
       const emaCrossIndicator = latestData.indicators.find(
         (indicator) => indicator.id === 'ema-cross',
       );
       if (emaCrossIndicator) {
-        console.log('calculatedData', calculatedData);
         if (
           entry.position === 'long' &&
           emaCrossIndicator.data.type === 'bearish'

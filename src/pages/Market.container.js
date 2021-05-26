@@ -436,7 +436,10 @@ const MarketContainer = () => {
 
     backtestEventsWithIndex.forEach((event, index) => {
       let profit = 0;
-      if (event.type === 'entry') {
+      if (
+        event.type === 'entry' &&
+        backtestEventsWithIndex.length > index + 1
+      ) {
         if (event.position === 'long') {
           profit =
             newData[backtestEventsWithIndex[index + 1].index].close -

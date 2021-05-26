@@ -235,21 +235,21 @@ const MarketChart = ({
             yAccessor={emaLong.accessor()}
             strokeStyle={emaLong.stroke()}
           />
-          <LineSeries
+          {/* <LineSeries
             yAccessor={emaDouble.accessor()}
             strokeStyle={emaDouble.stroke()}
-          />
+          /> */}
 
-          <LineSeries
+          {/* <LineSeries
             yAccessor={(d) => d.smooth}
             strokeStyle="#00FF11"
             strokeWidth={2}
-          />
-          <LineSeries
+          /> */}
+          {/* <LineSeries
             yAccessor={(d) => d.smoothAvgPriceRange}
             strokeStyle="#0011FF"
             strokeWidth={2}
-          />
+          /> */}
           <LineSeries
             yAccessor={(d) => d.momentum1 + momentumOffset}
             strokeStyle="#FF0011"
