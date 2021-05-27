@@ -39,6 +39,7 @@ const MarketView = ({
   backTestNumberProfitTrades,
   backTestNumberLossTrades,
   backTestResult,
+  onRunBackTest,
 }) => {
   return (
     <div
@@ -190,6 +191,7 @@ const MarketView = ({
                 <Heading as="h2" variant="heading6" sx={{ mb: 3 }}>
                   Back test
                 </Heading>
+                <button onClick={onRunBackTest}>Run back test</button>
                 {backTestResult && (
                   <Fragment>
                     <DisplayDataItem

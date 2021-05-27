@@ -190,25 +190,29 @@ const MarketContainer = () => {
   ]);
 
   const getHistoricalPrices = useCallback(
-    async (marketId, resolution, startTime) => {
-      const fetchData = async (marketId, resolution, startTime) => {
+    async (marketId, resolution, startTime, endTime) => {
+      const fetchData = async (marketId, resolution, startTime, endTime) => {
         const response = await ftxapi.getHistoricalPrices(
           marketId,
           resolution,
           startTime,
+          endTime,
         );
         const data = response.data.result;
 
+        // XXXXXXXX
+        // XXX Move pagination stuff elsewhere!!!!!
+        // XXXXXXXX
         // XXX This still needs testing!!!! Make sure we aren't re-adding the last
         // item.
-        if (
-          data[data.length - 1].time <
-          new Date().getTime() - toMilliseconds(1, 'hours')
-        ) {
-          data.push(
-            await fetchData(marketId, resolution, data[data.length - 1].time),
-          );
-        }
+        // if (
+        //   data[data.length - 1].time <
+        //   new Date().getTime() - toMilliseconds(1, 'hours')
+        // ) {
+        //   data.push(
+        //     await fetchData(marketId, resolution, data[data.length - 1].time),
+        //   );
+        // }
 
         return data;
       };
@@ -216,13 +220,15 @@ const MarketContainer = () => {
       try {
         const data = await fetchData(
           marketId,
-          // toSeconds(1, 'hours'),
-          toSeconds(15, 'minutes'),
+          toSeconds(1, 'hours'),
+          // toSeconds(15, 'minutes'),
           // Need to take an hour off start time so we get the candle that
           // the startTime value is a part of.
           startTime - toMilliseconds(1, 'hours'),
+          endTime,
         );
         setIsLoading(false);
+        console.log('RAW DATA', data);
         setMarketData(data);
       } catch (error) {
         setError(error.message);
@@ -231,33 +237,13 @@ const MarketContainer = () => {
     [],
   );
 
-  const backTestStrategy = useCallback((marketData) => {
-    const events = backTestMarketDataWithStrategy(
-      marketData,
-      // 'emaCrossStrategy',
-      'emaCrossRetraceToMaStrategy',
-    );
-    console.log('events', events);
-    const profit = calcProfitFromEvents(events);
-    console.log('PROFIT', profit);
-    setBackTestEvents(events);
-    setBackTestResult(profit);
-    setBackTestBiggestGain(profit.biggestGain);
-    setBackTestBiggestLoss(profit.biggestLoss);
-    setBackTestNumberProfitTrades(profit.numberProfitTrades);
-    setBackTestNumberLossTrades(profit.numberLossTrades);
-  }, []);
-
-  useEffect(() => {
-    backTestStrategy(marketData);
-  }, [backTestStrategy, marketData]);
-
   useEffect(() => {
     setIsLoading(true);
     getHistoricalPrices(
       apiMarketId,
       60,
-      new Date().getTime() - toMilliseconds(21, 'days'),
+      new Date().getTime() - toMilliseconds(341, 'days'),
+      new Date().getTime() - toMilliseconds(300, 'days'),
     );
   }, [getHistoricalPrices, apiMarketId]);
 
@@ -423,92 +409,79 @@ const MarketContainer = () => {
         },
       ]);
 
-      // Add trades
-      let lastEventIndex = 0;
-
-      const newData = [...calculatedData];
-      // Get event index within market data array.
-      const backtestEventsWithIndex = backTestEvents.map((event) => {
-        const dataIndex = calculatedData.findIndex(
-          (data) => data.time === event.time,
-        );
-
-        return { ...event, index: dataIndex };
-      });
-
-      backtestEventsWithIndex.forEach((event, index) => {
-        let profit = 0;
-        if (
-          event.type === 'entry' &&
-          backtestEventsWithIndex.length > index + 1
-        ) {
-          if (event.position === 'long') {
-            profit =
-              newData[backtestEventsWithIndex[index + 1].index].close -
-              newData[event.index].close;
-          } else {
-            profit =
-              newData[event.index].close -
-              newData[backtestEventsWithIndex[index + 1].index].close;
-          }
-        } else if (event.type === 'exit') {
-          if (event.position === 'long') {
-            profit =
-              newData[event.index].close -
-              newData[backtestEventsWithIndex[index - 1].index].close;
-          } else {
-            profit =
-              newData[backtestEventsWithIndex[index - 1].index].close -
-              newData[event.index].close;
-          }
-        }
-        const eventData = {
-          type: event.type,
-          position: event.position,
-          profit: profit,
-        };
-
-        if (!newData[event.index].backtestEvents) {
-          newData[event.index].backtestEvents = [eventData];
-        } else {
-          newData[event.index].backtestEvents.push(eventData);
-        }
-      });
-
-      // calculatedData = calculatedData.map((data, dataIndex) => {
-      //   // console.log('backTestEvents', backTestEvents);
-      //   const backtestEvents = backTestEvents.filter(
-      //     (event) => data.time === event.time,
-      //   );
-      //   if (backtestEvents.length > 0) {
-      //     // console.log(backtestEvents);
-      //     let backtestData = [];
-      //     backtestEvents.forEach((event, index) => {
-      //       let profit = 0;
-      //       if (event.type === 'buy') {
-      //          backtestEvents[index + 1];
-      //       }
-      //       // if (event.position === 'long') {
-      //       //   profit = profit * -1;
-      //       // }
-      //       backtestData.push({
-      //         type: event.type,
-      //         position: event.position,
-      //         profit: profit,
-      //       });
-      //     });
-
-      //     // console.log('SAVE', backtestData);
-      //     return { ...data, backtestEvents: backtestData };
-      //   } else {
-      //     return { ...data };
-      //   }
-      // });
-      setCalculatedMarketData(newData);
+      setCalculatedMarketData(calculatedData);
     };
 
     fillData();
-  }, [marketData, backTestEvents]);
+  }, [marketData]);
+
+  const handleRunBackTest = useCallback(() => {
+    const events = backTestMarketDataWithStrategy(
+      marketData,
+      // 'emaCrossStrategy',
+      'emaCrossRetraceToMaStrategy',
+    );
+    console.log('events', events);
+    const profit = calcProfitFromEvents(events);
+    console.log('PROFIT', profit);
+
+    const backTestData = [...calculatedMarketData];
+    // Get event index within market data array.
+    const backtestEventsWithIndex = events.map((event) => {
+      const dataIndex = calculatedMarketData.findIndex(
+        (data) => data.time === event.time,
+      );
+
+      return { ...event, index: dataIndex };
+    });
+
+    backtestEventsWithIndex.forEach((event, index) => {
+      let profit = 0;
+      if (
+        event.type === 'entry' &&
+        backtestEventsWithIndex.length > index + 1
+      ) {
+        if (event.position === 'long') {
+          profit =
+            backTestData[backtestEventsWithIndex[index + 1].index].close -
+            backTestData[event.index].close;
+        } else {
+          profit =
+            backTestData[event.index].close -
+            backTestData[backtestEventsWithIndex[index + 1].index].close;
+        }
+      } else if (event.type === 'exit') {
+        if (event.position === 'long') {
+          profit =
+            backTestData[event.index].close -
+            backTestData[backtestEventsWithIndex[index - 1].index].close;
+        } else {
+          profit =
+            backTestData[backtestEventsWithIndex[index - 1].index].close -
+            backTestData[event.index].close;
+        }
+      }
+      const eventData = {
+        type: event.type,
+        position: event.position,
+        profit: profit,
+      };
+
+      if (!backTestData[event.index].backtestEvents) {
+        backTestData[event.index].backtestEvents = [eventData];
+      } else {
+        backTestData[event.index].backtestEvents.push(eventData);
+      }
+    });
+
+    setCalculatedMarketData(backTestData);
+    setBackTestEvents(events);
+    setBackTestResult(profit);
+    setBackTestBiggestGain(profit.biggestGain);
+    setBackTestBiggestLoss(profit.biggestLoss);
+    setBackTestNumberProfitTrades(profit.numberProfitTrades);
+    setBackTestNumberLossTrades(profit.numberLossTrades);
+  }, [marketData, calculatedMarketData]);
 
   const toggleIndicatorsSettingsPanel = useCallback(() => {
     if (isBackTestPanelVisible) setIsBackTestPanelVisible(false);
@@ -582,6 +555,7 @@ const MarketContainer = () => {
       isBackTestPanelVisible={isBackTestPanelVisible}
       toggleBackTestPanel={toggleBackTestPanel}
       backTestResult={backTestResult}
+      onRunBackTest={handleRunBackTest}
     />
   );
 };

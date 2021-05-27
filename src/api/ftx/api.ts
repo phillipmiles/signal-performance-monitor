@@ -79,11 +79,14 @@ const getHistoricalPrices = async (
   marketId: string,
   resolution: number,
   start_time: number,
+  end_time: number,
 ) => {
+  console.log('H:OWEGKJRW:EOFI', end_time);
   const response = await axios.get(
     `http://localhost:3000/markets/${marketId}/candles`,
     {
       params: {
+        end_time: end_time ? toSeconds(end_time, 'milliseconds') : undefined,
         start_time: toSeconds(start_time, 'milliseconds'),
         resolution: resolution,
         limit: 5000,
