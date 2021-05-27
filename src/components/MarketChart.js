@@ -225,30 +225,37 @@ const MarketChart = ({
             arrowWidth={10}
             displayFormat={pricesDisplayFormat}
           />
-          <LineSeries
+          {/* <LineSeries
             yAccessor={emaShort.accessor()}
             strokeStyle={emaShort.stroke()}
-          />
+          /> */}
+          {/*}
           <LineSeries
             yAccessor={emaLong.accessor()}
             strokeStyle={emaLong.stroke()}
-          />
+          /> */}
           {/* <LineSeries
             yAccessor={emaDouble.accessor()}
             strokeStyle={emaDouble.stroke()}
           /> */}
 
-          {/* <LineSeries
+          <LineSeries
             yAccessor={(d) => d.smooth}
             strokeStyle="#00FF11"
             strokeWidth={2}
-          /> */}
+          />
           {/* <LineSeries
-            yAccessor={(d) => d.smoothAvgPriceRange}
+            yAccessor={(d) => d.smoothAvg}
             strokeStyle="#0011FF"
             strokeWidth={2}
           /> */}
-          <LineSeries
+          {/* <LineSeries
+            yAccessor={(d) => d.smoothDirectionExtremes}
+            strokeStyle="#0011FF"
+            strokeWidth={2}
+          /> */}
+
+          {/* <LineSeries
             yAccessor={(d) => d.momentum1 + momentumOffset}
             strokeStyle="#FF0011"
             strokeWidth={1}
@@ -257,17 +264,17 @@ const MarketChart = ({
             yAccessor={(d) => d.momentum2 + momentumOffset}
             strokeStyle="#000000"
             strokeWidth={1}
-          />
-          <LineSeries
+          /> */}
+          {/* <LineSeries
             yAccessor={(d) => d.ma100}
             strokeStyle="#FF4477"
             strokeWidth={1}
-          />
-          <LineSeries
+          /> */}
+          {/* <LineSeries
             yAccessor={(d) => d.ma200}
             strokeStyle="white"
             strokeWidth={1}
-          />
+          /> */}
           <TrendLine
             type="LINE"
             snap={false}

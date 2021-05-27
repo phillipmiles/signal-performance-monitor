@@ -54,15 +54,15 @@ sx={{
 }}
 /> */
 }
-ButtonIcon.propTypes = {
-  variant: PropTypes.oneOf(['light', 'dark']),
-  /** A React component that renders inline SVG. */
-  icon: PropTypes.func.isRequired,
-  disabled: PropTypes.bool,
-  size: PropTypes.number,
-  /** Text describing the button's action to be read by screen readers. */
-  ariaLabel: PropTypes.string.isRequired,
-};
+// ButtonIcon.propTypes = {
+//   variant: PropTypes.oneOf(['light', 'dark']),
+//   /** A React component that renders inline SVG. */
+//   icon: PropTypes.func.isRequired,
+//   disabled: PropTypes.bool,
+//   size: PropTypes.number,
+//   /** Text describing the button's action to be read by screen readers. */
+//   ariaLabel: PropTypes.string.isRequired,
+// };
 
 ButtonIcon.defaultProps = {
   variant: 'dark',

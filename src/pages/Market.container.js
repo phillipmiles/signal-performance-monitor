@@ -9,7 +9,9 @@ import { ema, rsi, getMouseCanvas } from 'react-financial-charts';
 import {
   calcDataArrayMomentum,
   calcDataArraySmooth,
+  calcDataArraySmoothAvg,
   calcDataArrayMA,
+  calcDataArrayDirectionExtremes,
 } from '../functions/metrics/transformPriceData';
 import { findDataArrayMinimaMaxima } from '../functions/util/findMinimaMaxima';
 import { emaCross } from '../functions/indicators/emaCross';
@@ -17,12 +19,13 @@ import {
   backTestMarketDataWithStrategy,
   calcProfitFromEvents,
 } from '../functions/strategies/backTest';
+import { calcTrendLines } from '../functions/analysis/calcTrendLines';
 
 const momentumOffset = 2800;
-const period = 12;
+const period = 16;
 const emaShort = ema()
   .id('short')
-  .options({ windowSize: 10 })
+  .options({ windowSize: 6 })
   .merge((d, c) => {
     d.emaShort = c;
   })
@@ -259,7 +262,7 @@ const MarketContainer = () => {
     getHistoricalPrices(
       apiMarketId,
       resolution,
-      new Date().getTime() - toMilliseconds(341, 'days'),
+      new Date().getTime() - toMilliseconds(656, 'days'),
       new Date().getTime() - toMilliseconds(300, 'days'),
     );
   }, [getHistoricalPrices, apiMarketId, timeFrame]);
@@ -273,11 +276,23 @@ const MarketContainer = () => {
               calcDataArrayMomentum(
                 calcDataArrayMomentum(
                   emaLong(
-                    calcDataArraySmooth(
-                      emaDouble(emaShort(marketData)),
-                      period / 2,
-                      'close',
+                    calcDataArrayDirectionExtremes(
+                      calcDataArraySmooth(
+                        calcDataArraySmoothAvg(
+                          emaDouble(emaShort(marketData)),
+                          period / 2,
+                          ['high', 'low'],
+                          'smoothAvg',
+                        ),
+                        period / 2,
+                        'close',
+                        'smooth',
+                      ),
+                      0,
                       'smooth',
+                      'high',
+                      'low',
+                      'smoothDirectionExtremes',
                     ),
                   ),
                   period / 2,
@@ -292,11 +307,11 @@ const MarketContainer = () => {
             'emaShort',
             'emaLong',
           ),
-          100,
+          20,
           'close',
           'ma100',
         ),
-        200,
+        50,
         'close',
         'ma200',
       );
@@ -430,6 +445,7 @@ const MarketContainer = () => {
     };
 
     fillData();
+    const trendLines = calcTrendLines(marketData);
   }, [marketData]);
 
   const handleRunBackTest = useCallback(() => {

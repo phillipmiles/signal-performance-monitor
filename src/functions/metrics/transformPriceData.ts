@@ -14,6 +14,32 @@ export const calcDataArraySmooth = (
   id?: string,
 ): any[] => {
   return dataArray.map((priceData, i) => {
+    if (i < smoothFactor || i > dataArray.length - 1 - smoothFactor)
+      return { ...priceData };
+    let sum = 0;
+    let loopedIndex;
+    for (
+      loopedIndex = i - smoothFactor;
+      loopedIndex <= i + smoothFactor;
+      loopedIndex++
+    ) {
+      sum = sum + dataArray[loopedIndex][key];
+    }
+
+    // const smoothed = sum / (smoothFactor * 2 + 1);
+    const smoothed = sum / (smoothFactor * 2 + 1);
+
+    return { ...priceData, [id ? id : 'smooth']: smoothed };
+  });
+};
+
+export const calcDataArraySmoothAvg = (
+  dataArray: any[],
+  smoothFactor: number,
+  keys: string[],
+  id?: string,
+): any[] => {
+  return dataArray.map((priceData, i) => {
     if (i < smoothFactor || i > dataArray.length - smoothFactor)
       return { ...priceData };
     let sum = 0;
@@ -23,13 +49,65 @@ export const calcDataArraySmooth = (
       loopedIndex < i + smoothFactor;
       loopedIndex++
     ) {
-      sum = sum + dataArray[loopedIndex][key];
+      let sumKeys = 0;
+      keys.forEach((key) => {
+        sumKeys = sumKeys + dataArray[loopedIndex][key];
+      });
+      sum = sum + sumKeys / keys.length;
     }
 
-    const smoothed = sum / (smoothFactor * 2);
+    const smoothed = sum / (smoothFactor * 2 + 1);
 
-    return { ...priceData, [id ? id : 'smooth']: smoothed };
+    return { ...priceData, [id ? id : 'smoothAvg']: smoothed };
   });
+};
+
+export const calcDataArrayDirectionExtremes = (
+  dataArray: any[],
+  smoothFactor: number,
+  smoothKey: string,
+  upKey: string,
+  downKey: string,
+  id?: string,
+): any[] => {
+  const newDataArray = [];
+  dataArray.forEach((priceData, i) => {
+    if (i > dataArray.length - 1) return { ...priceData };
+
+    let sum = 0;
+
+    if (priceData['close'] > priceData['open']) {
+      sum = sum + priceData[upKey];
+    } else {
+      sum = sum + priceData[downKey];
+    }
+
+    // if (
+    //   newDataArray.length > 0 &&
+    //   priceData[upKey] >= newDataArray[i - 1][upKey]
+    // ) {
+    //   sum = sum + priceData[upKey];
+    // } else {
+    //   sum = sum + priceData[downKey];
+    // }
+
+    // XXX
+
+    // if (priceData[smoothKey] - dataArray[loopedIndex - 1][smoothKey] >= 0) {
+    //   sum = sum + priceData[upKey];
+    // } else {
+    //   sum = sum + priceData[downKey];
+    // }
+    // }
+
+    const smoothed = smoothFactor > 0 ? sum / (smoothFactor * 2 + 1) : sum;
+
+    newDataArray.push({
+      ...priceData,
+      [id ? id : 'smoothDirectionExtremes']: smoothed,
+    });
+  });
+  return newDataArray;
 };
 
 // Calculates an array of data's momemtum for each element in the array by observing the
