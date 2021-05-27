@@ -136,6 +136,8 @@ const MarketContainer = () => {
   const [backTestEvents, setBackTestEvents] = useState([]);
   const [backTestBiggestGain, setBackTestBiggestGain] = useState();
   const [backTestBiggestLoss, setBackTestBiggestLoss] = useState();
+  const [timeFrame, setTimeFrame] = useState('1d');
+  const [isMarketsMenuOpen, setIsMarketsMenuOpen] = useState(false);
   const [
     backTestNumberProfitTrades,
     setBackTestNumberProfitTrades,
@@ -220,8 +222,7 @@ const MarketContainer = () => {
       try {
         const data = await fetchData(
           marketId,
-          toSeconds(1, 'hours'),
-          // toSeconds(15, 'minutes'),
+          resolution,
           // Need to take an hour off start time so we get the candle that
           // the startTime value is a part of.
           startTime - toMilliseconds(1, 'hours'),
@@ -238,14 +239,30 @@ const MarketContainer = () => {
   );
 
   useEffect(() => {
+    let resolution;
+
+    if (timeFrame === '1w') {
+      resolution = toSeconds(1, 'weeks');
+    } else if (timeFrame === '1d') {
+      resolution = toSeconds(1, 'days');
+    } else if (timeFrame === '4h') {
+      resolution = toSeconds(4, 'hours');
+    } else if (timeFrame === '1h') {
+      resolution = toSeconds(1, 'hours');
+    } else if (timeFrame === '15m') {
+      resolution = toSeconds(15, 'minutes');
+    } else if (timeFrame === '5m') {
+      resolution = toSeconds(5, 'minutes');
+    }
+
     setIsLoading(true);
     getHistoricalPrices(
       apiMarketId,
-      60,
+      resolution,
       new Date().getTime() - toMilliseconds(341, 'days'),
       new Date().getTime() - toMilliseconds(300, 'days'),
     );
-  }, [getHistoricalPrices, apiMarketId]);
+  }, [getHistoricalPrices, apiMarketId, timeFrame]);
 
   useEffect(() => {
     const fillData = async () => {
@@ -519,7 +536,14 @@ const MarketContainer = () => {
     setFocusedDataItem(dataItem);
   }, []);
 
-  // const iDunno = getMouseCanvas();
+  const handleOpenMarketsMenu = useCallback(() => {
+    setIsMarketsMenuOpen((prevState) => !prevState);
+  }, []);
+
+  const handleChangeTimeFrame = useCallback((event) => {
+    setTimeFrame(event.target.value);
+  }, []);
+
   return (
     <Market
       marketId={apiMarketId}
@@ -556,6 +580,10 @@ const MarketContainer = () => {
       toggleBackTestPanel={toggleBackTestPanel}
       backTestResult={backTestResult}
       onRunBackTest={handleRunBackTest}
+      onOpenMarketseMenu={handleOpenMarketsMenu}
+      isMarketsMenuOpen={isMarketsMenuOpen}
+      timeFrame={timeFrame}
+      onChangeTimeFrame={handleChangeTimeFrame}
     />
   );
 };

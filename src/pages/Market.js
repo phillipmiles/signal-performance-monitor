@@ -11,6 +11,7 @@ import Text from '../components/generic/Text';
 import DisplayDataItem from '../components/DisplayDataItem';
 import { Fragment } from 'react';
 import Candle from '../components/Candle';
+import TetherExpander from '../components/generic/TetherExpander';
 
 const MarketView = ({
   marketId,
@@ -40,6 +41,10 @@ const MarketView = ({
   backTestNumberLossTrades,
   backTestResult,
   onRunBackTest,
+  onOpenMarketsMenu,
+  isMarketsMenuOpen,
+  onChangeTimeFrame,
+  timeFrame,
 }) => {
   return (
     <div
@@ -61,15 +66,24 @@ const MarketView = ({
           sx={{
             justifyContent: 'space-between',
             alignItems: 'center',
-            px: 3,
             py: 2,
             bg: '#0E131A',
           }}
         >
-          <Heading as="h1" variant="heading5" sx={{ color: 'white' }}>
-            {marketId}
-          </Heading>
-          <div>
+          <Flex>
+            <Heading as="h1" variant="heading5" sx={{ color: 'white', px: 3 }}>
+              {marketId}
+            </Heading>
+            <select value={timeFrame} onChange={onChangeTimeFrame}>
+              {/* <option value="1w">1 week</option> */}
+              <option value="1d">1 day</option>
+              <option value="4h">4 hours</option>
+              <option value="1h">1 hours</option>
+              <option value="15m">15 minutes</option>
+              <option value="5m">5 minutes</option>
+            </select>
+          </Flex>
+          <div sx={{ px: 3 }}>
             <ButtonIcon
               icon={faCoins}
               onClick={toggleBackTestPanel}
