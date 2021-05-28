@@ -1,4 +1,5 @@
 /** @jsx jsx */
+import { useThemeUI } from 'theme-ui';
 import { useEffect, useCallback, useState } from 'react';
 import { useParams } from 'react-router';
 import { jsx } from 'theme-ui';
@@ -19,7 +20,10 @@ import {
   backTestMarketDataWithStrategy,
   calcProfitFromEvents,
 } from '../functions/strategies/backTest';
-import { calcTrendLines } from '../functions/analysis/calcTrendLines';
+import {
+  calcLevelStrength,
+  calcTrendLines,
+} from '../functions/analysis/calcTrendLines';
 
 const momentumOffset = 2800;
 const period = 16;
@@ -131,6 +135,7 @@ const correctLows = (dataArray, highsArray, period) => {
 };
 
 const MarketContainer = () => {
+  const { theme } = useThemeUI();
   const [
     isIndicatorsSettingsPanelVisible,
     setIsIndicatorsSettingsPanelVisible,
@@ -262,8 +267,10 @@ const MarketContainer = () => {
     getHistoricalPrices(
       apiMarketId,
       resolution,
-      new Date().getTime() - toMilliseconds(656, 'days'),
-      new Date().getTime() - toMilliseconds(300, 'days'),
+      // new Date().getTime() - toMilliseconds(656, 'days'),
+      // new Date().getTime() - toMilliseconds(307, 'days'),
+      new Date().getTime() - toMilliseconds(500, 'days'),
+      new Date().getTime() - toMilliseconds(207, 'days'),
     );
   }, [getHistoricalPrices, apiMarketId, timeFrame]);
 
@@ -370,7 +377,7 @@ const MarketContainer = () => {
         linesToSave.push(
           {
             // type: level.numNear > 6 ? 'RAY' : 'LINE',
-            type: 'LINE',
+            type: 'RAY',
             selected: false,
             // Size of x axies is from 0 to number of data points.
             start: [level.index, yPos],
@@ -424,7 +431,7 @@ const MarketContainer = () => {
         // ...highsToSave,
         // ...lowsToSave,
         {
-          type: 'RAY',
+          type: 'XLINE',
           selected: false,
           // Size of x axies is from 0 to number of data points.
           start: [0, momentumOffset],
@@ -445,7 +452,58 @@ const MarketContainer = () => {
     };
 
     fillData();
-    const trendLines = calcTrendLines(marketData);
+    const levels = calcTrendLines(marketData);
+    const chartRays = [];
+
+    if (levels.length > 0) {
+      let strengthMin = levels[0].frequency - levels[0].numCrossPrice;
+      let strengthMax = levels[0].frequency - levels[0].numCrossPrice;
+
+      levels.forEach((level) => {
+        const strength = calcLevelStrength(level, marketData);
+
+        if (strength > strengthMax) {
+          strengthMax = strength;
+        }
+        if (strength < strengthMin) {
+          strengthMin = strength;
+        }
+      });
+
+      levels.forEach((level) => {
+        const strength = calcLevelStrength(level, marketData);
+
+        const filterVal = 0;
+        const normalisedStrength = strength - strengthMin;
+        const normalisedStrengthMax = strengthMax - strengthMin;
+
+        if (normalisedStrength / normalisedStrengthMax < filterVal) {
+          return;
+        }
+
+        const strengthDisplayVal = Math.floor(
+          ((strength - strengthMin) / (strengthMax - strengthMin)) * 10,
+        );
+
+        chartRays.push({
+          type: 'RAY',
+          selected: false,
+          // Size of x axies is from 0 to number of data points.
+          start: [level.points[0].x, level.y],
+          end: [marketData.length, level.y],
+          appearance: {
+            edgeFill: '#FFFFFF',
+            edgeStroke: '#000000',
+            edgeStrokeWidth: 1,
+            r: 6,
+            strokeDasharray: 'Solid',
+            strokeStyle: theme.colors.chart.strength[strengthDisplayVal],
+            strokeWidth: 1,
+          },
+        });
+      });
+      setTrends(chartRays);
+    }
   }, [marketData]);
 
   const handleRunBackTest = useCallback(() => {

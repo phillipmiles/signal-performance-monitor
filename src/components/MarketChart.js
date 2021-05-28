@@ -276,7 +276,7 @@ const MarketChart = ({
             strokeWidth={1}
           /> */}
           <TrendLine
-            type="LINE"
+            // type="XLINE"
             snap={false}
             enabled={false}
             snapTo={(d) => [d.high, d.low]}
