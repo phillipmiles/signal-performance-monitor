@@ -6,7 +6,12 @@ import { jsx } from 'theme-ui';
 import Market from './Market';
 import ftxapi from '../api/ftx/api';
 import { toMilliseconds, toSeconds } from '../util/time';
-import { ema, rsi, getMouseCanvas } from 'react-financial-charts';
+import {
+  ema,
+  rsi,
+  getMouseCanvas,
+  stochasticOscillator,
+} from 'react-financial-charts';
 import {
   calcDataArrayMomentum,
   calcDataArraySmooth,
@@ -29,7 +34,7 @@ const momentumOffset = 2800;
 const period = 16;
 const emaShort = ema()
   .id('short')
-  .options({ windowSize: 6 })
+  .options({ windowSize: 9 })
   .merge((d, c) => {
     d.emaShort = c;
   })
@@ -56,6 +61,13 @@ const rsiCalculator = rsi()
     d.rsi = c;
   })
   .accessor((d) => d.rsi);
+
+const fullSTO = stochasticOscillator()
+  .options({ windowSize: 14, kWindowSize: 3, dWindowSize: 4 })
+  .merge((d, c) => {
+    d.fullSTO = c;
+  })
+  .accessor((d) => d.fullSTO);
 
 const rsiOptions = rsiCalculator.options();
 const rsiYAccessor = rsiCalculator.accessor();
@@ -269,46 +281,49 @@ const MarketContainer = () => {
       resolution,
       // new Date().getTime() - toMilliseconds(656, 'days'),
       // new Date().getTime() - toMilliseconds(307, 'days'),
-      new Date().getTime() - toMilliseconds(500, 'days'),
+      // new Date().getTime() - toMilliseconds(500, 'days'),
       new Date().getTime() - toMilliseconds(207, 'days'),
+      // new Date().getTime() - toMilliseconds(21, 'days'),
     );
   }, [getHistoricalPrices, apiMarketId, timeFrame]);
 
   useEffect(() => {
-    const fillData = async () => {
-      let calculatedData = calcDataArrayMA(
+    let calculatedData = calcDataArrayMA(
+      calcDataArrayMA(
         calcDataArrayMA(
           emaCross(
-            rsiCalculator(
-              calcDataArrayMomentum(
+            fullSTO(
+              rsiCalculator(
                 calcDataArrayMomentum(
-                  emaLong(
-                    calcDataArrayDirectionExtremes(
-                      calcDataArraySmooth(
-                        calcDataArraySmoothAvg(
-                          emaDouble(emaShort(marketData)),
+                  calcDataArrayMomentum(
+                    emaLong(
+                      calcDataArrayDirectionExtremes(
+                        calcDataArraySmooth(
+                          calcDataArraySmoothAvg(
+                            emaDouble(emaShort(marketData)),
+                            period / 2,
+                            ['high', 'low'],
+                            'smoothAvg',
+                          ),
                           period / 2,
-                          ['high', 'low'],
-                          'smoothAvg',
+                          'close',
+                          'smooth',
                         ),
-                        period / 2,
-                        'close',
+                        0,
                         'smooth',
+                        'high',
+                        'low',
+                        'smoothDirectionExtremes',
                       ),
-                      0,
-                      'smooth',
-                      'high',
-                      'low',
-                      'smoothDirectionExtremes',
                     ),
+                    period / 2,
+                    'smooth', // USE smooth OR emaDouble
+                    'momentum1',
                   ),
                   period / 2,
-                  'smooth', // USE smooth OR emaDouble
                   'momentum1',
+                  'momentum2',
                 ),
-                period / 2,
-                'momentum1',
-                'momentum2',
               ),
             ),
             'emaShort',
@@ -316,144 +331,144 @@ const MarketContainer = () => {
           ),
           20,
           'close',
-          'ma100',
+          'ma20',
         ),
-        50,
+        100,
         'close',
-        'ma200',
-      );
+        'ma100',
+      ),
+      200,
+      'close',
+      'ma200',
+    );
 
-      console.log('DATA', calculatedData);
+    console.log('DATA', calculatedData);
 
-      const { minima, maxima } = findDataArrayMinimaMaxima(
-        calculatedData,
-        'momentum1',
-        'momentum2',
-      );
+    const { minima, maxima } = findDataArrayMinimaMaxima(
+      calculatedData,
+      'momentum1',
+      'momentum2',
+    );
 
-      const correctedHighs = correctHighs(calculatedData, maxima, period / 2);
-      const correctedLows = correctLows(calculatedData, minima, period / 2);
+    const correctedHighs = correctHighs(calculatedData, maxima, period / 2);
+    const correctedLows = correctLows(calculatedData, minima, period / 2);
 
-      const combineLowsAndHighs = [...correctedLows, ...correctedHighs];
-      const lowHighsWithStrength = combineLowsAndHighs.map((item) => {
-        let numNear = 0;
-        let sumNear = 0;
-        combineLowsAndHighs.forEach((itemCompare) => {
-          if (itemCompare.index === item.index) return;
+    const combineLowsAndHighs = [...correctedLows, ...correctedHighs];
+    const lowHighsWithStrength = combineLowsAndHighs.map((item) => {
+      let numNear = 0;
+      let sumNear = 0;
+      combineLowsAndHighs.forEach((itemCompare) => {
+        if (itemCompare.index === item.index) return;
 
-          if (
-            itemCompare.value < item.value + item.value * 0.015 &&
-            itemCompare.value > item.value - item.value * 0.015
-          ) {
-            // console.log(itemCompare[1], item[1]);
-            // console.log('new num', indexCompare, numNear);
-            numNear = numNear + 1;
-            sumNear = sumNear + itemCompare.value;
-            // HOW AND WHERE AM I STORING UBER LINES!!?!?
-          }
-        });
-        // console.log('nn', numNear);
-        return {
-          index: item.index,
-          value: item.value,
-          // value2: item[2],
-          numNear: numNear,
-          avgLine: sumNear / numNear,
-        };
+        if (
+          itemCompare.value < item.value + item.value * 0.015 &&
+          itemCompare.value > item.value - item.value * 0.015
+        ) {
+          // console.log(itemCompare[1], item[1]);
+          // console.log('new num', indexCompare, numNear);
+          numNear = numNear + 1;
+          sumNear = sumNear + itemCompare.value;
+          // HOW AND WHERE AM I STORING UBER LINES!!?!?
+        }
       });
+      // console.log('nn', numNear);
+      return {
+        index: item.index,
+        value: item.value,
+        // value2: item[2],
+        numNear: numNear,
+        avgLine: sumNear / numNear,
+      };
+    });
 
-      console.log(
-        'lowHighsWithStrength',
-        combineLowsAndHighs,
-        lowHighsWithStrength,
-      );
+    console.log(
+      'lowHighsWithStrength',
+      combineLowsAndHighs,
+      lowHighsWithStrength,
+    );
 
-      const linesToSave = [];
+    const linesToSave = [];
 
-      lowHighsWithStrength.forEach((level) => {
-        // const yPos = level.avgLine ? level.avgLine : level.value;
-        const yPos = level.value;
-        // if(level.numNear < 1) return;
-        linesToSave.push(
-          {
-            // type: level.numNear > 6 ? 'RAY' : 'LINE',
-            type: 'RAY',
-            selected: false,
-            // Size of x axies is from 0 to number of data points.
-            start: [level.index, yPos],
-            end: [level.index + 10, yPos],
-            appearance: {
-              edgeFill: '#FFFFFF',
-              edgeStroke: '#000000',
-              edgeStrokeWidth: 1,
-              r: 6,
-              strokeDasharray: 'Solid',
-              strokeStyle:
-                level.numNear < 1
-                  ? '#DDDDDD'
-                  : level.numNear > 6
-                  ? level.numNear > 16
-                    ? '#000000'
-                    : '#888888'
-                  : '#AAAAAA',
-              strokeWidth: 3,
-            },
-          },
-          // Add close/open line as well
-          // {
-          //   type: 'LINE',
-          //   selected: false,
-          //   // Size of x axies is from 0 to number of data points.
-          //   start: [level.index, level.value2],
-          //   end: [level.index + 10, level.value2],
-          //   appearance: {
-          //     edgeFill: '#FFFFFF',
-          //     edgeStroke: '#000000',
-          //     edgeStrokeWidth: 1,
-          //     r: 6,
-          //     strokeDasharray: 'Solid',
-          //     strokeStyle:
-          //       level.numNear < 1
-          //         ? '#DDDDDD'
-          //         : level.numNear > 6
-          //         ? level.numNear > 16
-          //           ? '#000000'
-          //           : '#888888'
-          //         : '#AAAAAA',
-          //     strokeWidth: 3,
-          //   },
-          // },
-        );
-      });
-
-      setTrends([
-        ...linesToSave,
-        // ...highsToSave,
-        // ...lowsToSave,
+    lowHighsWithStrength.forEach((level) => {
+      // const yPos = level.avgLine ? level.avgLine : level.value;
+      const yPos = level.value;
+      // if(level.numNear < 1) return;
+      linesToSave.push(
         {
-          type: 'XLINE',
+          // type: level.numNear > 6 ? 'RAY' : 'LINE',
+          type: 'LINE',
           selected: false,
           // Size of x axies is from 0 to number of data points.
-          start: [0, momentumOffset],
-          end: [168, momentumOffset],
+          start: [level.index, yPos],
+          end: [level.index + 10, yPos],
           appearance: {
             edgeFill: '#FFFFFF',
             edgeStroke: '#000000',
             edgeStrokeWidth: 1,
             r: 6,
             strokeDasharray: 'Solid',
-            strokeStyle: '#000000',
-            strokeWidth: 1,
+            strokeStyle:
+              level.numNear < 1
+                ? '#DDDDDD'
+                : level.numNear > 6
+                ? level.numNear > 16
+                  ? '#000000'
+                  : '#888888'
+                : '#AAAAAA',
+            strokeWidth: 3,
           },
         },
-      ]);
+        // Add close/open line as well
+        // {
+        //   type: 'LINE',
+        //   selected: false,
+        //   // Size of x axies is from 0 to number of data points.
+        //   start: [level.index, level.value2],
+        //   end: [level.index + 10, level.value2],
+        //   appearance: {
+        //     edgeFill: '#FFFFFF',
+        //     edgeStroke: '#000000',
+        //     edgeStrokeWidth: 1,
+        //     r: 6,
+        //     strokeDasharray: 'Solid',
+        //     strokeStyle:
+        //       level.numNear < 1
+        //         ? '#DDDDDD'
+        //         : level.numNear > 6
+        //         ? level.numNear > 16
+        //           ? '#000000'
+        //           : '#888888'
+        //         : '#AAAAAA',
+        //     strokeWidth: 3,
+        //   },
+        // },
+      );
+    });
 
-      setCalculatedMarketData(calculatedData);
-    };
+    setCalculatedMarketData(calculatedData);
 
-    fillData();
-    const levels = calcTrendLines(marketData);
+    const range = 5;
+    const levels = calcTrendLines(marketData, range);
     const chartRays = [];
+
+    for (let index = 0; index < marketData.length; index = index + range) {
+      chartRays.push({
+        type: 'RAY',
+        selected: false,
+        // Size of x axies is from 0 to number of data points.
+        start: [index, 0],
+        end: [index, 10],
+        appearance: {
+          edgeFill: '#FFFFFF',
+          edgeStroke: '#000000',
+          edgeStrokeWidth: 1,
+          r: 6,
+          strokeDasharray: 'Solid',
+          strokeStyle: theme.colors.black,
+          strokeWidth: 1,
+        },
+      });
+    }
 
     if (levels.length > 0) {
       let strengthMin = levels[0].frequency - levels[0].numCrossPrice;
@@ -473,7 +488,7 @@ const MarketContainer = () => {
       levels.forEach((level) => {
         const strength = calcLevelStrength(level, marketData);
 
-        const filterVal = 0;
+        const filterVal = 0; // Remove the absolute least strong lines.
         const normalisedStrength = strength - strengthMin;
         const normalisedStrengthMax = strengthMax - strengthMin;
 
@@ -501,16 +516,39 @@ const MarketContainer = () => {
             strokeWidth: 1,
           },
         });
+
+        level.points.forEach((point) => {
+          chartRays.push({
+            type: 'LINE',
+            selected: false,
+            // Size of x axies is from 0 to number of data points.
+            start: [point.x, point.y],
+            end: [point.x + 1, point.y],
+            appearance: {
+              edgeFill: '#FFFFFF',
+              edgeStroke: '#000000',
+              edgeStrokeWidth: 1,
+              r: 6,
+              strokeDasharray: 'Solid',
+              strokeStyle: theme.colors.chart.strength[strengthDisplayVal],
+              strokeWidth: 8,
+            },
+          });
+        });
       });
-      setTrends(chartRays);
+
+      setTrends([
+        ...chartRays,
+        //...linesToSave
+      ]);
     }
   }, [marketData]);
 
   const handleRunBackTest = useCallback(() => {
     const events = backTestMarketDataWithStrategy(
       marketData,
-      // 'emaCrossStrategy',
-      'emaCrossRetraceToMaStrategy',
+      'emaCrossStrategy',
+      // 'emaCrossRetraceToMaStrategy',
     );
     console.log('events', events);
     const profit = calcProfitFromEvents(events);

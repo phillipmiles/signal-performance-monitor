@@ -22,10 +22,12 @@ import {
   RSISeries,
   RSITooltip,
   BarSeries,
+  StochasticSeries,
 } from 'react-financial-charts';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 
 const margin = { left: 0, right: 108, top: 0, bottom: 48 };
+const stochasticYExtents = [0, 100];
 const rsiYExtents = [0, 100];
 const rsiTickValues = [30, 50, 70];
 const rsiToolTipOrigin = [8, 16];
@@ -92,8 +94,18 @@ const MarketChart = ({
     return data.volume;
   };
 
-  const candleChartHeight =
-    height - margin.top - margin.bottom - rsiChartHeight - barChartHeight;
+  const stochasticChartHeight = 100;
+  const stochasticYAccessor = (d) => d.fullSTO;
+  const stochasticOrigin = (_, h) => [
+    0,
+    h - stochasticChartHeight - rsiChartHeight - barChartHeight,
+  ];
+
+  const candleChartHeight = height - margin.top - margin.bottom;
+  //-
+  // rsiChartHeight -
+  // barChartHeight -
+  // stochasticChartHeight;
 
   const annotationWhen = (d) => {
     if (d.indicators !== undefined) {
@@ -228,8 +240,8 @@ const MarketChart = ({
           {/* <LineSeries
             yAccessor={emaShort.accessor()}
             strokeStyle={emaShort.stroke()}
-          /> */}
-          {/*}
+          />
+
           <LineSeries
             yAccessor={emaLong.accessor()}
             strokeStyle={emaLong.stroke()}
@@ -266,11 +278,16 @@ const MarketChart = ({
             strokeWidth={1}
           /> */}
           {/* <LineSeries
-            yAccessor={(d) => d.ma100}
-            strokeStyle="#FF4477"
+            yAccessor={(d) => d.ma20}
+            strokeStyle="#FFFF77"
             strokeWidth={1}
           /> */}
           {/* <LineSeries
+            yAccessor={(d) => d.ma100}
+            strokeStyle="#FF4477"
+            strokeWidth={1}
+          />
+          <LineSeries
             yAccessor={(d) => d.ma200}
             strokeStyle="white"
             strokeWidth={1}
@@ -331,7 +348,26 @@ const MarketChart = ({
             ]}
           />
         </Chart>
-
+        {/* <Chart
+          id={'stochastic'}
+          height={stochasticChartHeight}
+          origin={stochasticOrigin}
+          yExtents={stochasticYExtents}
+        >
+          <XAxis
+            ticks={0}
+            strokeStyle={styleAxisColor}
+            tickStrokeStyle={styleAxisColor}
+            tickLabelFill={styleAxisColor}
+          />
+          <YAxis
+            tickValues={[20, 50, 80]}
+            strokeStyle={styleAxisColor}
+            tickStrokeStyle={styleAxisColor}
+            tickLabelFill={styleAxisColor}
+          />
+          <StochasticSeries yAccessor={stochasticYAccessor} />
+        </Chart>
         <Chart
           id={'rsi'}
           yExtents={rsiYExtents}
@@ -375,7 +411,7 @@ const MarketChart = ({
             ticks={20}
           />
           <BarSeries yAccessor={volumeSeries} />
-        </Chart>
+        </Chart> */}
       </ChartCanvas>
     );
   } else {

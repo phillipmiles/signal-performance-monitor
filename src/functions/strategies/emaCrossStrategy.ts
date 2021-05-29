@@ -1,6 +1,6 @@
 // Designed to follow trends
 // import { toMilliseconds, toSeconds } from '../util/time';
-import { ema } from 'react-financial-charts';
+import { ema, stochasticOscillator } from 'react-financial-charts';
 import { emaCross } from '../indicators/emaCross';
 import { calcDataArrayMA } from '../metrics/transformPriceData';
 
@@ -20,18 +20,27 @@ const findEntry = (marketData) => {
     })
     .accessor((d) => d.emaLong);
 
-  const calculatedData = calcDataArrayMA(
+  const fullSTO = stochasticOscillator()
+    .options({ windowSize: 14, kWindowSize: 3, dWindowSize: 4 })
+    .merge((d, c) => {
+      d.fullSTO = c;
+    })
+    .accessor((d) => d.fullSTO);
+  const calculatedData = fullSTO(
     calcDataArrayMA(
-      emaCross(emaLong(emaShort(marketData)), 'emaShort', 'emaLong'),
-      100,
+      calcDataArrayMA(
+        emaCross(emaLong(emaShort(marketData)), 'emaShort', 'emaLong'),
+        100,
+        'close',
+        'ma100',
+      ),
+      200,
       'close',
-      'ma100',
+      'ma200',
     ),
-    200,
-    'close',
-    'ma200',
   );
 
+  console.log('calculatedData', calculatedData);
   if (calculatedData.length > 1) {
     const current = calculatedData[calculatedData.length - 1];
     const previous = calculatedData[calculatedData.length - 2];
@@ -66,6 +75,11 @@ const findEntry = (marketData) => {
           //   emaCrossIndicator.data.type === 'bearish'
           // ) {
           // if (latestData.close < latestData.ma100) {
+
+          if (current.fullSTO.K < 20) {
+            return;
+          }
+
           return {
             price: current.close,
             position: 'short',
@@ -79,6 +93,11 @@ const findEntry = (marketData) => {
           if (current.ma100 - previous.ma100 < 0) {
             return;
           }
+
+          if (current.fullSTO.K > 80) {
+            return;
+          }
+
           // } else if (
           //   latestData.ma200 < latestData.ma100 &&
           //   emaCrossIndicator.data.type === 'bullish'
@@ -115,42 +134,120 @@ const findInvalidation = (marketData, entry) => {
     })
     .accessor((d) => d.emaLong);
 
-  const calculatedData = emaCross(
-    emaLong(emaShort(marketData)),
-    'emaShort',
-    'emaLong',
+  const fullSTO = stochasticOscillator()
+    .options({ windowSize: 14, kWindowSize: 3, dWindowSize: 4 })
+    .merge((d, c) => {
+      d.fullSTO = c;
+    })
+    .accessor((d) => d.fullSTO);
+
+  const calculatedData = fullSTO(
+    emaCross(emaLong(emaShort(marketData)), 'emaShort', 'emaLong'),
   );
 
   if (calculatedData.length > 0) {
     const latestData = calculatedData[calculatedData.length - 1];
-    if (latestData.indicators !== undefined) {
-      const emaCrossIndicator = latestData.indicators.find(
-        (indicator) => indicator.id === 'ema-cross',
-      );
-      if (emaCrossIndicator) {
-        if (
-          entry.position === 'long' &&
-          emaCrossIndicator.data.type === 'bearish'
-        ) {
-          return {
-            price: latestData.close,
-            position: entry.position,
-            volume: 'all of it',
-            time: latestData.time,
-          };
-        } else if (
-          entry.position === 'short' &&
-          emaCrossIndicator.data.type === 'bullish'
-        ) {
-          return {
-            price: latestData.close,
-            position: entry.position,
-            volume: 'all of it',
-            time: latestData.time,
-          };
-        }
+
+    // XXX TOFIX - Problem if entry ends up being before the proovided market data array then
+    // we lose entry.
+    const indexOfEntry = marketData.findIndex(
+      (priceData) => priceData.time === entry.time,
+    );
+
+    let didCrossOverBounds = false;
+
+    if (
+      entry.position === 'long' &&
+      calculatedData[indexOfEntry].fullSTO.K > 20 &&
+      latestData.fullSTO.K <= 20
+    ) {
+      return {
+        price: latestData.close,
+        position: entry.position,
+        volume: 'all of it',
+        time: latestData.time,
+      };
+    } else if (
+      entry.position === 'short' &&
+      calculatedData[indexOfEntry].fullSTO.K < 80 &&
+      latestData.fullSTO.K >= 80
+    ) {
+      return {
+        price: latestData.close,
+        position: entry.position,
+        volume: 'all of it',
+        time: latestData.time,
+      };
+    }
+
+    for (let index = indexOfEntry; index < marketData.length; index++) {
+      // console.log(entry.position, calculatedData[index].fullSTO.D);
+      if (entry.position === 'long' && calculatedData[index].fullSTO.K >= 80) {
+        // console.log('did cross', entry.position, calculatedData[index]);
+        didCrossOverBounds = true;
+      } else if (
+        entry.position === 'short' &&
+        calculatedData[index].fullSTO.K <= 20
+      ) {
+        // console.log('did cross', entry.position, calculatedData[index]);
+        didCrossOverBounds = true;
+      }
+
+      if (
+        entry.position === 'long' &&
+        calculatedData[index].fullSTO.K < 80 &&
+        didCrossOverBounds
+      ) {
+        return {
+          price: latestData.close,
+          position: entry.position,
+          volume: 'all of it',
+          time: latestData.time,
+        };
+      } else if (
+        entry.position === 'short' &&
+        calculatedData[index].fullSTO.K > 20 &&
+        didCrossOverBounds
+      ) {
+        return {
+          price: latestData.close,
+          position: entry.position,
+          volume: 'all of it',
+          time: latestData.time,
+        };
       }
     }
+
+    // console.log('indexOFEnty', indexOfEntry);
+
+    // if (latestData.indicators !== undefined) {
+    //   const emaCrossIndicator = latestData.indicators.find(
+    //     (indicator) => indicator.id === 'ema-cross',
+    //   );
+    //   if (emaCrossIndicator) {
+    //     if (
+    //       entry.position === 'long' &&
+    //       emaCrossIndicator.data.type === 'bearish'
+    //     ) {
+    //       return {
+    //         price: latestData.close,
+    //         position: entry.position,
+    //         volume: 'all of it',
+    //         time: latestData.time,
+    //       };
+    //     } else if (
+    //       entry.position === 'short' &&
+    //       emaCrossIndicator.data.type === 'bullish'
+    //     ) {
+    //       return {
+    //         price: latestData.close,
+    //         position: entry.position,
+    //         volume: 'all of it',
+    //         time: latestData.time,
+    //       };
+    //     }
+    //   }
+    // }
   }
   return;
 };
