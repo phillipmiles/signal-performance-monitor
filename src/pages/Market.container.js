@@ -282,8 +282,8 @@ const MarketContainer = () => {
       // new Date().getTime() - toMilliseconds(656, 'days'),
       // new Date().getTime() - toMilliseconds(307, 'days'),
       // new Date().getTime() - toMilliseconds(500, 'days'),
-      new Date().getTime() - toMilliseconds(207, 'days'),
-      // new Date().getTime() - toMilliseconds(21, 'days'),
+      new Date().getTime() - toMilliseconds(707, 'days'),
+      new Date().getTime() - toMilliseconds(250, 'days'),
     );
   }, [getHistoricalPrices, apiMarketId, timeFrame]);
 
@@ -297,24 +297,25 @@ const MarketContainer = () => {
                 calcDataArrayMomentum(
                   calcDataArrayMomentum(
                     emaLong(
-                      calcDataArrayDirectionExtremes(
-                        calcDataArraySmooth(
-                          calcDataArraySmoothAvg(
-                            emaDouble(emaShort(marketData)),
-                            period / 2,
-                            ['high', 'low'],
-                            'smoothAvg',
-                          ),
-                          period / 2,
-                          'close',
-                          'smooth',
-                        ),
-                        0,
+                      // calcDataArrayDirectionExtremes(
+                      calcDataArraySmooth(
+                        // calcDataArraySmoothAvg(
+                        emaDouble(emaShort(marketData)),
+                        //   period / 2,
+                        //   ['high', 'low'],
+                        //   'smoothAvg',
+                        // ),
+                        period / 2,
+                        'close',
                         'smooth',
-                        'high',
-                        'low',
-                        'smoothDirectionExtremes',
                       ),
+                      //   10,
+                      //   '',
+                      //   'high',
+                      //   'low',
+                      //   // 'smooth',
+                      //   'smoothDirectionExtremes',
+                      // ),
                     ),
                     period / 2,
                     'smooth', // USE smooth OR emaDouble
@@ -447,32 +448,33 @@ const MarketContainer = () => {
 
     setCalculatedMarketData(calculatedData);
 
-    const range = 5;
+    const range = 10;
     const levels = calcTrendLines(marketData, range);
     const chartRays = [];
 
-    for (let index = 0; index < marketData.length; index = index + range) {
-      chartRays.push({
-        type: 'RAY',
-        selected: false,
-        // Size of x axies is from 0 to number of data points.
-        start: [index, 0],
-        end: [index, 10],
-        appearance: {
-          edgeFill: '#FFFFFF',
-          edgeStroke: '#000000',
-          edgeStrokeWidth: 1,
-          r: 6,
-          strokeDasharray: 'Solid',
-          strokeStyle: theme.colors.black,
-          strokeWidth: 1,
-        },
-      });
-    }
+    // Show range lines
+    // for (let index = 0; index < marketData.length; index = index + range) {
+    //   chartRays.push({
+    //     type: 'RAY',
+    //     selected: false,
+    //     // Size of x axies is from 0 to number of data points.
+    //     start: [index, 0],
+    //     end: [index, 10],
+    //     appearance: {
+    //       edgeFill: '#FFFFFF',
+    //       edgeStroke: '#000000',
+    //       edgeStrokeWidth: 1,
+    //       r: 6,
+    //       strokeDasharray: 'Solid',
+    //       strokeStyle: theme.colors.black,
+    //       strokeWidth: 1,
+    //     },
+    //   });
+    // }
 
     if (levels.length > 0) {
-      let strengthMin = levels[0].frequency - levels[0].numCrossPrice;
-      let strengthMax = levels[0].frequency - levels[0].numCrossPrice;
+      let strengthMin = calcLevelStrength(levels[0], marketData);
+      let strengthMax = calcLevelStrength(levels[0], marketData);
 
       levels.forEach((level) => {
         const strength = calcLevelStrength(level, marketData);
@@ -489,8 +491,9 @@ const MarketContainer = () => {
         const strength = calcLevelStrength(level, marketData);
 
         const filterVal = 0; // Remove the absolute least strong lines.
-        const normalisedStrength = strength - strengthMin;
-        const normalisedStrengthMax = strengthMax - strengthMin;
+        const normalisedStrength = strength + levels[0].strength - strengthMin;
+        const normalisedStrengthMax =
+          strengthMax + levels[0].strength - strengthMin;
 
         if (normalisedStrength / normalisedStrengthMax < filterVal) {
           return;
@@ -498,6 +501,14 @@ const MarketContainer = () => {
 
         const strengthDisplayVal = Math.floor(
           ((strength - strengthMin) / (strengthMax - strengthMin)) * 10,
+        );
+
+        console.log(
+          'Strength min/max',
+          strength,
+          strengthMin,
+          strengthMax,
+          strengthDisplayVal,
         );
 
         chartRays.push({
@@ -537,10 +548,7 @@ const MarketContainer = () => {
         });
       });
 
-      setTrends([
-        ...chartRays,
-        //...linesToSave
-      ]);
+      setTrends([...chartRays, ...linesToSave]);
     }
   }, [marketData]);
 

@@ -1,27 +1,36 @@
-import { calcDataArraySmooth } from '../metrics/transformPriceData';
+import {
+  calcDataArrayMomentum,
+  calcDataArraySmooth,
+} from '../metrics/transformPriceData';
+import { findDataArrayMinimaMaxima } from '../util/findMinimaMaxima';
 
-const findMinMaxs = (marketData, rangeConstant) => {
+const findHighLowsInRange = (marketData, rangeConstant) => {
   const rangeHighsArray = [];
   const rangeLowsArray = [];
   const rangeBodyHighsArray = [];
   const rangeBodyLowsArray = [];
-
-  const savedPoints = [];
 
   for (
     let range = 0;
     range < marketData.length - rangeConstant; // Run array to rangeConstant distance from end of market data. We don't want to add anything from the latest range as it's too soon to decide it as a min or max.
     range = range + rangeConstant
   ) {
-    let rangeHigh = { x: 0, y: 0 };
-    let rangeLow = { x: range, y: marketData[range].low };
-    let rangeBodyHigh = { x: 0, y: 0 };
+    let rangeHigh = { x: 0, y: 0, position: 'high', strength: 1 };
+    let rangeLow = {
+      x: range,
+      y: marketData[range].low,
+      position: 'low',
+      strength: 1,
+    };
+    let rangeBodyHigh = { x: 0, y: 0, position: 'bodyHigh', strength: 1 };
     let rangeBodyLow = {
       x: range,
       y:
         marketData[range].close < marketData[range].open
           ? marketData[range].close
           : marketData[range].open,
+      position: 'bodyLow',
+      strength: 1,
     };
 
     for (
@@ -31,11 +40,11 @@ const findMinMaxs = (marketData, rangeConstant) => {
     ) {
       const priceData = marketData[i];
       if (priceData.high > rangeHigh.y) {
-        rangeHigh = { x: i, y: priceData.high };
+        rangeHigh = { x: i, y: priceData.high, position: 'high', strength: 1 };
       }
 
       if (priceData.low < rangeLow.y) {
-        rangeLow = { x: i, y: priceData.low };
+        rangeLow = { x: i, y: priceData.low, position: 'low', strength: 1 };
       }
 
       const bodyHigh =
@@ -44,11 +53,16 @@ const findMinMaxs = (marketData, rangeConstant) => {
         priceData.close < priceData.open ? priceData.close : priceData.open;
 
       if (bodyHigh > rangeBodyHigh.y) {
-        rangeBodyHigh = { x: i, y: bodyHigh };
+        rangeBodyHigh = {
+          x: i,
+          y: bodyHigh,
+          position: 'bodyHigh',
+          strength: 1,
+        };
       }
 
       if (bodyLow < rangeBodyLow.y) {
-        rangeBodyLow = { x: i, y: bodyLow };
+        rangeBodyLow = { x: i, y: bodyLow, position: 'bodyLow', strength: 1 };
       }
     }
     if (range === 15 * rangeConstant) {
@@ -60,7 +74,13 @@ const findMinMaxs = (marketData, rangeConstant) => {
     rangeBodyHighsArray.push(rangeBodyHigh);
     rangeBodyLowsArray.push(rangeBodyLow);
   }
-  console.log('RL', rangeLowsArray);
+  console.log(
+    'RL',
+    rangeLowsArray,
+    rangeHighsArray,
+    rangeBodyHighsArray,
+    rangeBodyLowsArray,
+  );
   // return {
   //   highs: rangeHighsArray,
   //   lows: rangeLowsArray,
@@ -115,6 +135,7 @@ const findSupportLevels = (coords: any[], order, closeRange) => {
     }
 
     const sum = coordsFoundToBeClose.reduce((a, b) => a + b.y, 0);
+    const strength = coordsFoundToBeClose.reduce((a, b) => a + b.strength, 0);
     // XXX TODO: WHEN CHOOSING A MEDIAN - MAYBE SHIFT CLOSER TO POINTS THAT
     // ARE IDENTIFIED AS TURNING POINTS (oe low high low or high low high).
     const median = sum / coordsFoundToBeClose.length;
@@ -126,6 +147,7 @@ const findSupportLevels = (coords: any[], order, closeRange) => {
       y: median,
       frequency: coordsFoundToBeClose.length,
       points: coordsFoundToBeClose,
+      strength: strength,
     });
   }
 
@@ -137,9 +159,8 @@ const applyToStrengthPriceMovementCross = (marketData, levels) => {
     marketData,
     8,
     'close',
-    'smooth',
+    'smoothSupportStrength',
   );
-  console.log('levels', levels);
 
   calculatedMarketData.forEach((priceData, x) => {
     for (let levelIndex = 0; levelIndex < levels.length; levelIndex++) {
@@ -150,10 +171,10 @@ const applyToStrengthPriceMovementCross = (marketData, levels) => {
       if (level.points[0].x <= x) {
         if (
           x !== 0 &&
-          ((calculatedMarketData[x - 1].smooth < level.y &&
-            level.y < priceData.smooth) ||
+          ((calculatedMarketData[x - 1].smoothSupportStrength < level.y &&
+            level.y < priceData.smoothSupportStrength) ||
             (calculatedMarketData[x - 1].smooth > level.y &&
-              level.y > priceData.smooth))
+              level.y > priceData.smoothSupportStrength))
         ) {
           // Break the level
           level.numCrossPrice = level.numCrossPrice + 1;
@@ -211,100 +232,189 @@ const mergeClosePoints = (
       0,
     );
 
+    const sumStrength = closePoints.reduce(
+      (accumulator, currentValue) => accumulator + currentValue.strength,
+      0,
+    );
+
     const avgYPos = sumY / closePoints.length;
     const avgXPos = Math.round(sumX / closePoints.length); // Need to round an index.
+    // Take off strength value for merge. But include any additional strength for special points.
+    const avgStrength = 1 + sumStrength - closePoints.length;
 
-    while (closePoints.length > 0) {
-      closePoints.splice(0, 1);
-    }
-    updatedPointsArray.push({ x: avgXPos, y: avgYPos });
+    // while (closePoints.length > 0) {
+    //   closePoints.splice(0, 1);
+    // }
+    updatedPointsArray.push({
+      x: avgXPos,
+      y: avgYPos,
+      position: 'closeAverage',
+      strength: avgStrength,
+      points: closePoints,
+    });
   }
   console.log('updatedPointsArray', updatedPointsArray);
   return updatedPointsArray;
 };
 
-const filterClosePoints = (points: any[]) => {
-  const filteredPoints = [];
+const filterPoints = (points) => {
+  return points;
+};
 
-  const sortedPoints = points.sort((first, second) => first.x - second.x);
-  const groupedPoints = [];
-  console.log('begin');
-  for (let index = 0; index < sortedPoints.length; index++) {
-    let closeIndex = index;
-    const closePoints = [sortedPoints[index]];
-    // console.log('big loop', sortedPoints[closeIndex + 1].x, index);
-    // XXXXX NEED TO FIND A WAY TO FILTER POINTS NEAR ONE ANOTHER!!!!
-    while (
-      sortedPoints.length < closeIndex + 1 &&
-      sortedPoints[closeIndex + 1].x < index + 5
+// FOR CORRECTION ALGORITHIM...
+// Could assign less weight to indexs close to the edges of the period range. This would prevent
+// the correction picking highs and lows that aren't necessarily local and is actually
+// a seperate high already picked up by another local maxima/minima.
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// MAKE SURE ANY CORRECTED POSITIONS have a lower point on either side of it
+// If there are none within the period then reject the position entirely
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+const correctHighs = (dataArray, highsArray, period) => {
+  const correctedHighs = highsArray.map((dataIndex) => {
+    let highestHigh = 0;
+    let highestHighIndex = 0;
+    let loopIndex = 0;
+    for (
+      loopIndex = dataIndex - period;
+      loopIndex <= dataIndex + period && dataArray.length > dataIndex + period;
+      loopIndex++
     ) {
-      closeIndex = closeIndex + 1;
-      console.log(
-        'der',
-        sortedPoints,
-        closeIndex,
-        sortedPoints[closeIndex],
-        sortedPoints[index].y + sortedPoints[index].y * 0.2,
-        sortedPoints[closeIndex].y,
-      );
-      if (
-        sortedPoints[index].y + sortedPoints[index].y * 0.2 >
-          sortedPoints[closeIndex].y ||
-        sortedPoints[index].y - sortedPoints[index].y * 0.2 <
-          sortedPoints[closeIndex].y
-      ) {
-        // closePoints.push(sortedPoints[closeIndex]);
-        // sortedPoints.splice(closeIndex, 1);
+      if (highestHigh < dataArray[loopIndex].high) {
+        // ADD SOME KIND OF DEMINISHING FACTOR WHEN LOOPINDEX IS FAR FROM DATAINDEX
+        // Use it to flatten this high down? Or how do I use it?
+        highestHigh = dataArray[loopIndex].high;
+        highestHighIndex = loopIndex;
       }
     }
-    groupedPoints.push(closePoints);
-  }
-  console.log('done');
-  console.log('pp', groupedPoints);
-  return points;
+    // console.log('HH', dataIndex, highestHigh);
+    // const structure = [...dataIndexSTRUCTURE];
+    // structure[0] = highestHighIndex;
+    // structure[1] = highestHigh;
+
+    // if (dataArray[highestHighIndex].close > dataArray[highestHighIndex].open) {
+    //   structure[2] = dataArray[highestHighIndex].close;
+    // } else {
+    //   structure[2] = dataArray[highestHighIndex].open;
+    // }
+
+    return { index: highestHighIndex, value: highestHigh };
+  });
+  return correctedHighs;
+};
+
+const correctLows = (dataArray, highsArray, period) => {
+  const correctedLows = highsArray.map((dataIndex) => {
+    let lowestLow;
+    let lowestLowIndex = 0;
+    let loopIndex = 0;
+    for (
+      loopIndex = dataIndex - period;
+      loopIndex <= dataIndex + period && dataArray.length > dataIndex + period;
+      loopIndex++
+    ) {
+      if (lowestLow === undefined || lowestLow > dataArray[loopIndex].low) {
+        lowestLow = dataArray[loopIndex].low;
+        lowestLowIndex = loopIndex;
+      }
+    }
+    // console.log('HH', dataIndex, lowestLow);
+    // const structure = [...dataIndexSTRUCTURE];
+    // structure[0] = lowestLowIndex;
+    // structure[1] = lowestLow;
+
+    // // NEED TO DO THE SAME ABOVE FOR HIGHEST AND LOWSET CLOSE AND OPENS
+    // if (dataArray[lowestLowIndex].close < dataArray[lowestLowIndex].open) {
+    //   structure[2] = dataArray[lowestLowIndex].close;
+    // } else {
+    //   structure[2] = dataArray[lowestLowIndex].open;
+    // }
+
+    return { index: lowestLowIndex, value: lowestLow };
+  });
+  return correctedLows;
+};
+
+const findTurningPoints = (marketData) => {
+  const calculatedData = calcDataArrayMomentum(
+    calcDataArrayMomentum(
+      calcDataArraySmooth(marketData, 8, 'close', 'smoothTurningPoints'),
+      8,
+      'smoothTurningPoints', // USE smooth OR emaDouble
+      'momentumTurningPoints1',
+    ),
+    8,
+    'momentumTurningPoints1',
+    'momentumTurningPoints2',
+  );
+
+  const { minima, maxima } = findDataArrayMinimaMaxima(
+    calculatedData,
+    'momentumTurningPoints1',
+    'momentumTurningPoints2',
+  );
+
+  console.log('mm', minima, maxima);
+  const turningPoints = [];
+  const correctedHighs = correctHighs(calculatedData, maxima, 8);
+  const correctedLows = correctLows(calculatedData, minima, 8);
+
+  correctedHighs.forEach((point) => {
+    turningPoints.push({
+      x: point.index,
+      y: point.value,
+      position: 'high',
+      strength: 2,
+      detectionMethod: 'localMinMax',
+    });
+  });
+  correctedLows.forEach((point) => {
+    turningPoints.push({
+      x: point.index,
+      y: point.value,
+      position: 'low',
+      strength: 2,
+      detectionMethod: 'localMinMax',
+    });
+  });
+
+  return turningPoints;
 };
 
 export const calcTrendLines = (marketData: any[], range) => {
   if (marketData.length === 0) return [];
 
   // Get points of interest.
-  // const { highs, lows, bodyHighs, bodyLows } = findMinMaxs(marketData, range);
-  const points = findMinMaxs(marketData, range);
-  const points2 = [...points];
-  console.log('POINTS', points);
+  const points = findHighLowsInRange(marketData, range);
+  const turningPoints = findTurningPoints(marketData);
+  const combinedPoints = [...points, ...turningPoints];
+  console.log('turningPoints', turningPoints);
 
-  const filteredPoints = mergeClosePoints(
-    points,
-    2,
-    marketData[marketData.length - 1].close * 0.1,
-  );
-  // const filteredPoints = filterClosePoints([
-  //   ...lows,
-  //   ...bodyLows,
-  //   ...highs,
-  //   ...bodyHighs,
-  // ]);
-  // return [];
-  const supports = findSupportLevels(
+  // Remove points that are just bad.
+  const filteredPoints = filterPoints(combinedPoints);
+
+  // const mergeRate = 0;
+  const mergeRate = 0.1;
+
+  // Merge together points that are really close together.
+  const mergedPoints = mergeClosePoints(
     filteredPoints,
+    5,
+    marketData[marketData.length - 1].close * mergeRate,
+  );
+
+  const supports = findSupportLevels(
+    mergedPoints,
     'asc',
-    marketData[marketData.length - 1].close * 0.12,
+    marketData[marketData.length - 1].close * mergeRate,
   );
 
   const newLevels = applyToStrengthPriceMovementCross(marketData, supports);
-  // const supports = findSupportLevels(bodyLows, 'asc', 0.013);
 
-  // const highSupports = findSupportLevels([...highs, ...bodyHighs], 'dsc');
-
-  // console.log(highs);
-  // console.log(lows);
-  // console.log(bodyHighs);
-  // console.log(bodyLows);
   return newLevels;
 };
 
 export const calcLevelStrength = (level, marketData) => {
-  const noPriceCrossMultiplier = level.numCrossPrice === 0 ? 1 : 1;
   const recentRange = 20;
 
   const crossPriceAvgVal =
@@ -317,8 +427,11 @@ export const calcLevelStrength = (level, marketData) => {
       ? 1
       : 0;
 
-  const strength = Math.floor(
-    level.frequency + crossPriceAvgVal + recentVal,
+  const distanceVal =
+    (marketData.length - level.points[level.points.length - 1].x) / recentRange;
+  console.log('level', level);
+  let strength = Math.floor(
+    level.strength + level.frequency + crossPriceAvgVal + recentVal,
     // +
     // level.points[level.points.length - 1].x >
     // marketData.length - 1 - recentRange
@@ -331,11 +444,14 @@ export const calcLevelStrength = (level, marketData) => {
     // /
     //   noPriceCrossMultiplier,
   );
+
+  strength = Math.floor(level.strength - level.numCrossPrice - distanceVal);
   console.log(strength);
   // XXXX I think current way of smoothening strength is fucked. If something is really
   // not strong it shouldn't destroy the subtlties in the really strong ones.
   // XXXX Maybe their should be a numCrossPrice val AND a numCrossPriceSinceLastPoint.
   // Points found on a line that was retested and hasn't since crossed back over
   // the price shouldn't be badly penalised. The line is still valid to some degree.
+  // return strength;
   return strength;
 };

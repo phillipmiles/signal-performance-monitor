@@ -74,12 +74,23 @@ export const calcDataArrayDirectionExtremes = (
   dataArray.forEach((priceData, i) => {
     if (i > dataArray.length - 1) return { ...priceData };
 
+    if (i < smoothFactor || i > dataArray.length - smoothFactor)
+      return { ...priceData };
     let sum = 0;
+    let loopedIndex;
 
-    if (priceData['close'] > priceData['open']) {
-      sum = sum + priceData[upKey];
-    } else {
-      sum = sum + priceData[downKey];
+    for (
+      loopedIndex = i - smoothFactor;
+      loopedIndex < i + smoothFactor;
+      loopedIndex++
+    ) {
+      if (priceData['close'] > priceData['open']) {
+        // sum = sum + priceData[upKey];
+        sum = sum + dataArray[loopedIndex][upKey];
+      } else {
+        // sum = sum + priceData[downKey];
+        sum = sum + dataArray[loopedIndex][downKey];
+      }
     }
 
     // if (
@@ -100,7 +111,7 @@ export const calcDataArrayDirectionExtremes = (
     // }
     // }
 
-    const smoothed = smoothFactor > 0 ? sum / (smoothFactor * 2 + 1) : sum;
+    const smoothed = sum / (smoothFactor * 2 + 1);
 
     newDataArray.push({
       ...priceData,
