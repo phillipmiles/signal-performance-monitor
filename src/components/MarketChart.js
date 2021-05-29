@@ -203,6 +203,7 @@ const MarketChart = ({
   const pricesDisplayFormat = format('.2f');
 
   const customSnapX = (props, moreProps) => {
+    if (!mouseXY) return;
     const { xScale, xAccessor, currentItem, mouseXY } = moreProps;
     const { snapX } = props;
     const x = snapX ? Math.round(xScale(xAccessor(currentItem))) : mouseXY[0];
