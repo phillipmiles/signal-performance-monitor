@@ -1,46 +1,54 @@
 /** @jsx jsx */
-import { useThemeUI } from 'theme-ui';
-import { useEffect, useCallback, useState } from 'react';
-import { useParams } from 'react-router';
-import { jsx } from 'theme-ui';
-import Market from './Market';
-import ftxapi from '../api/ftx/api';
-import { toMilliseconds, toSeconds } from '../util/time';
+import { useThemeUI } from "theme-ui";
+import { useEffect, useCallback, useState } from "react";
+import { useParams } from "react-router";
+import { jsx } from "theme-ui";
+import Market from "./Market";
+import ftxapi from "../api/ftx/api";
+import { toMilliseconds, toSeconds } from "../util/time";
 import {
   ema,
   rsi,
   getMouseCanvas,
   stochasticOscillator,
-} from 'react-financial-charts';
+} from "react-financial-charts";
 import {
   calcDataArrayMomentum,
   calcDataArraySmooth,
   calcDataArraySmoothAvg,
   calcDataArrayMA,
+  calcDataArrayPP,
   calcDataArrayDirectionExtremes,
-} from '../functions/metrics/transformPriceData';
-import { findDataArrayMinimaMaxima } from '../functions/util/findMinimaMaxima';
-import { emaCross } from '../functions/indicators/emaCross';
+} from "../functions/metrics/transformPriceData";
+import { findDataArrayMinimaMaxima } from "../functions/util/findMinimaMaxima";
+import { emaCross } from "../functions/indicators/emaCross";
 import {
   backTestMarketDataWithStrategy,
   calcProfitFromEvents,
-} from '../functions/strategies/backTest';
+} from "../functions/strategies/backTest";
 import {
   calcLevelStrength,
   calcTrendLines,
-} from '../functions/analysis/calcTrendLines';
+} from "../functions/analysis/calcTrendLines";
+
+// HPotter Pivot Points START
+
+const res = "daily";
+// Pivot point
+
+// HPotter Pivot Points END
 
 const momentumOffset = 2800;
 const period = 16;
 const emaShort = ema()
-  .id('short')
+  .id("short")
   .options({ windowSize: 9 })
   .merge((d, c) => {
     d.emaShort = c;
   })
   .accessor((d) => d.emaShort);
 const emaLong = ema()
-  .id('long')
+  .id("long")
   .options({ windowSize: 21 })
   .merge((d, c) => {
     d.emaLong = c;
@@ -48,8 +56,8 @@ const emaLong = ema()
   .accessor((d) => d.emaLong);
 
 const emaDouble = ema()
-  .id('double')
-  .options({ windowSize: period, sourcePath: 'emaShort' })
+  .id("double")
+  .options({ windowSize: period, sourcePath: "emaShort" })
   .merge((d, c) => {
     d.emaDouble = c;
   })
@@ -156,7 +164,7 @@ const MarketContainer = () => {
   const [backTestEvents, setBackTestEvents] = useState([]);
   const [backTestBiggestGain, setBackTestBiggestGain] = useState();
   const [backTestBiggestLoss, setBackTestBiggestLoss] = useState();
-  const [timeFrame, setTimeFrame] = useState('1d');
+  const [timeFrame, setTimeFrame] = useState("1d");
   const [isMarketsMenuOpen, setIsMarketsMenuOpen] = useState(false);
   const [
     backTestNumberProfitTrades,
@@ -167,45 +175,46 @@ const MarketContainer = () => {
   const [isInfoPanelVisible, setIsInfoPanelVisible] = useState(false);
   const [isBackTestPanelVisible, setIsBackTestPanelVisible] = useState(false);
   const [marketData, setMarketData] = useState([]);
+  const [dailyMarketData, setDailyMarketData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [calculatedMarketData, setCalculatedMarketData] = useState([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   let { marketId } = useParams();
-  const splitMarketId = marketId.split('_');
+  const splitMarketId = marketId.split("_");
   const baseCoin = splitMarketId[0];
   const coinMarket = splitMarketId[1].toLowerCase();
-  const marketSymbol = coinMarket === 'perp' ? '-' : '/';
+  const marketSymbol = coinMarket === "perp" ? "-" : "/";
   const apiMarketId = baseCoin + marketSymbol + coinMarket;
   const [trends, setTrends] = useState([
     {
-      type: 'LINE',
+      type: "LINE",
       selected: false,
       start: [110, 41329.107142857145],
       end: [158, 48078.66071428571],
       appearance: {
-        edgeFill: '#FFFFFF',
-        edgeStroke: '#000000',
+        edgeFill: "#FFFFFF",
+        edgeStroke: "#000000",
         edgeStrokeWidth: 1,
         r: 6,
-        strokeDasharray: 'Solid',
-        strokeStyle: '#000000',
+        strokeDasharray: "Solid",
+        strokeStyle: "#000000",
         strokeWidth: 1,
       },
     },
     {
-      type: 'LINE',
+      type: "LINE",
       selected: false,
       // Size of x axies is from 0 to number of data points.
       start: [0, 41329.107142857145],
       end: [168, 48078.66071428571],
       appearance: {
-        edgeFill: '#FFFFFF',
-        edgeStroke: '#000000',
+        edgeFill: "#FFFFFF",
+        edgeStroke: "#000000",
         edgeStrokeWidth: 1,
         r: 6,
-        strokeDasharray: 'Solid',
-        strokeStyle: '#000000',
+        strokeDasharray: "Solid",
+        strokeStyle: "#000000",
         strokeWidth: 1,
       },
     },
@@ -218,7 +227,7 @@ const MarketContainer = () => {
           marketId,
           resolution,
           startTime,
-          endTime,
+          endTime
         );
         const data = response.data.result;
 
@@ -238,41 +247,52 @@ const MarketContainer = () => {
 
         return data;
       };
-      console.log('start time', startTime);
+      console.log("start time", startTime);
       try {
         const data = await fetchData(
           marketId,
           resolution,
           // Need to take an hour off start time so we get the candle that
           // the startTime value is a part of.
-          startTime - toMilliseconds(1, 'hours'),
-          endTime,
+          startTime - toMilliseconds(1, "hours"),
+          endTime
         );
+
+        const dailyData = await fetchData(
+          marketId,
+          toSeconds(1, "days"),
+          // Need to take an hour off start time so we get the candle that
+          // the startTime value is a part of.
+          startTime - toMilliseconds(1, "hours"),
+          endTime
+        );
+
         setIsLoading(false);
-        console.log('RAW DATA', data);
+        console.log("RAW DATA", data);
         setMarketData(data);
+        setDailyMarketData(dailyData);
       } catch (error) {
         setError(error.message);
       }
     },
-    [],
+    []
   );
 
   useEffect(() => {
     let resolution;
 
-    if (timeFrame === '1w') {
-      resolution = toSeconds(1, 'weeks');
-    } else if (timeFrame === '1d') {
-      resolution = toSeconds(1, 'days');
-    } else if (timeFrame === '4h') {
-      resolution = toSeconds(4, 'hours');
-    } else if (timeFrame === '1h') {
-      resolution = toSeconds(1, 'hours');
-    } else if (timeFrame === '15m') {
-      resolution = toSeconds(15, 'minutes');
-    } else if (timeFrame === '5m') {
-      resolution = toSeconds(5, 'minutes');
+    if (timeFrame === "1w") {
+      resolution = toSeconds(1, "weeks");
+    } else if (timeFrame === "1d") {
+      resolution = toSeconds(1, "days");
+    } else if (timeFrame === "4h") {
+      resolution = toSeconds(4, "hours");
+    } else if (timeFrame === "1h") {
+      resolution = toSeconds(1, "hours");
+    } else if (timeFrame === "15m") {
+      resolution = toSeconds(15, "minutes");
+    } else if (timeFrame === "5m") {
+      resolution = toSeconds(5, "minutes");
     }
 
     setIsLoading(true);
@@ -282,73 +302,78 @@ const MarketContainer = () => {
       // new Date().getTime() - toMilliseconds(656, 'days'),
       // new Date().getTime() - toMilliseconds(307, 'days'),
       // new Date().getTime() - toMilliseconds(500, 'days'),
-      new Date().getTime() - toMilliseconds(707, 'days'),
-      new Date().getTime() - toMilliseconds(250, 'days'),
+      // new Date().getTime() - toMilliseconds(300, "days"),
+      new Date().getTime() - toMilliseconds(10, "days")
     );
   }, [getHistoricalPrices, apiMarketId, timeFrame]);
 
   useEffect(() => {
-    let calculatedData = calcDataArrayMA(
+    let calculatedData = calcDataArrayPP(
       calcDataArrayMA(
         calcDataArrayMA(
-          emaCross(
-            fullSTO(
-              rsiCalculator(
-                calcDataArrayMomentum(
+          calcDataArrayMA(
+            emaCross(
+              fullSTO(
+                rsiCalculator(
                   calcDataArrayMomentum(
-                    emaLong(
-                      // calcDataArrayDirectionExtremes(
-                      calcDataArraySmooth(
-                        // calcDataArraySmoothAvg(
-                        emaDouble(emaShort(marketData)),
-                        //   period / 2,
-                        //   ['high', 'low'],
-                        //   'smoothAvg',
+                    calcDataArrayMomentum(
+                      emaLong(
+                        // calcDataArrayDirectionExtremes(
+                        calcDataArraySmooth(
+                          // calcDataArraySmoothAvg(
+                          emaDouble(emaShort(marketData)),
+                          //   period / 2,
+                          //   ['high', 'low'],
+                          //   'smoothAvg',
+                          // ),
+                          period / 2,
+                          "close",
+                          "smooth"
+                        )
+                        //   10,
+                        //   '',
+                        //   'high',
+                        //   'low',
+                        //   // 'smooth',
+                        //   'smoothDirectionExtremes',
                         // ),
-                        period / 2,
-                        'close',
-                        'smooth',
                       ),
-                      //   10,
-                      //   '',
-                      //   'high',
-                      //   'low',
-                      //   // 'smooth',
-                      //   'smoothDirectionExtremes',
-                      // ),
+                      period / 2,
+                      "smooth", // USE smooth OR emaDouble
+                      "momentum1"
                     ),
                     period / 2,
-                    'smooth', // USE smooth OR emaDouble
-                    'momentum1',
-                  ),
-                  period / 2,
-                  'momentum1',
-                  'momentum2',
-                ),
+                    "momentum1",
+                    "momentum2"
+                  )
+                )
               ),
+              "emaShort",
+              "emaLong"
             ),
-            'emaShort',
-            'emaLong',
+            20,
+            "close",
+            "ma20"
           ),
-          20,
-          'close',
-          'ma20',
+          100,
+          "close",
+          "ma100"
         ),
-        100,
-        'close',
-        'ma100',
+        200,
+        "close",
+        "ma200"
       ),
-      200,
-      'close',
-      'ma200',
+      dailyMarketData,
+      toMilliseconds(1, "days"),
+      "pp"
     );
 
-    console.log('DATA', calculatedData);
+    console.log("DATA", calculatedData);
 
     const { minima, maxima } = findDataArrayMinimaMaxima(
       calculatedData,
-      'momentum1',
-      'momentum2',
+      "momentum1",
+      "momentum2"
     );
 
     const correctedHighs = correctHighs(calculatedData, maxima, period / 2);
@@ -383,9 +408,9 @@ const MarketContainer = () => {
     });
 
     console.log(
-      'lowHighsWithStrength',
+      "lowHighsWithStrength",
       combineLowsAndHighs,
-      lowHighsWithStrength,
+      lowHighsWithStrength
     );
 
     const linesToSave = [];
@@ -397,28 +422,28 @@ const MarketContainer = () => {
       linesToSave.push(
         {
           // type: level.numNear > 6 ? 'RAY' : 'LINE',
-          type: 'LINE',
+          type: "LINE",
           selected: false,
           // Size of x axies is from 0 to number of data points.
           start: [level.index, yPos],
           end: [level.index + 10, yPos],
           appearance: {
-            edgeFill: '#FFFFFF',
-            edgeStroke: '#000000',
+            edgeFill: "#FFFFFF",
+            edgeStroke: "#000000",
             edgeStrokeWidth: 1,
             r: 6,
-            strokeDasharray: 'Solid',
+            strokeDasharray: "Solid",
             strokeStyle:
               level.numNear < 1
-                ? '#DDDDDD'
+                ? "#DDDDDD"
                 : level.numNear > 6
                 ? level.numNear > 16
-                  ? '#000000'
-                  : '#888888'
-                : '#AAAAAA',
+                  ? "#000000"
+                  : "#888888"
+                : "#AAAAAA",
             strokeWidth: 3,
           },
-        },
+        }
         // Add close/open line as well
         // {
         //   type: 'LINE',
@@ -500,52 +525,52 @@ const MarketContainer = () => {
         }
 
         const strengthDisplayVal = Math.floor(
-          ((strength - strengthMin) / (strengthMax - strengthMin)) * 10,
+          ((strength - strengthMin) / (strengthMax - strengthMin)) * 10
         );
 
         console.log(
-          'Strength min/max',
+          "Strength min/max",
           strength,
           strengthMin,
           strengthMax,
-          strengthDisplayVal,
+          strengthDisplayVal
         );
 
         chartRays.push({
-          type: 'RAY',
+          type: "RAY",
           selected: false,
           // Size of x axies is from 0 to number of data points.
           start: [level.points[0].x, level.y],
           end: [marketData.length, level.y],
           appearance: {
-            edgeFill: '#FFFFFF',
-            edgeStroke: '#000000',
+            edgeFill: "#FFFFFF",
+            edgeStroke: "#000000",
             edgeStrokeWidth: 1,
             r: 6,
-            strokeDasharray: 'Solid',
+            strokeDasharray: "Solid",
             strokeStyle: theme.colors.chart.strength[strengthDisplayVal],
             strokeWidth: 1,
           },
         });
 
-        level.points.forEach((point) => {
-          chartRays.push({
-            type: 'LINE',
-            selected: false,
-            // Size of x axies is from 0 to number of data points.
-            start: [point.x, point.y],
-            end: [point.x + 1, point.y],
-            appearance: {
-              edgeFill: '#FFFFFF',
-              edgeStroke: '#000000',
-              edgeStrokeWidth: 1,
-              r: 6,
-              strokeDasharray: 'Solid',
-              strokeStyle: theme.colors.chart.strength[strengthDisplayVal],
-              strokeWidth: 8,
-            },
-          });
-        });
+        // level.points.forEach((point) => {
+        //   chartRays.push({
+        //     type: "LINE",
+        //     selected: false,
+        //     // Size of x axies is from 0 to number of data points.
+        //     start: [point.x, point.y],
+        //     end: [point.x + 1, point.y],
+        //     appearance: {
+        //       edgeFill: "#FFFFFF",
+        //       edgeStroke: "#000000",
+        //       edgeStrokeWidth: 1,
+        //       r: 6,
+        //       strokeDasharray: "Solid",
+        //       strokeStyle: theme.colors.chart.strength[strengthDisplayVal],
+        //       strokeWidth: 8,
+        //     },
+        //   });
+        // });
       });
 
       setTrends([...chartRays, ...linesToSave]);
@@ -555,18 +580,18 @@ const MarketContainer = () => {
   const handleRunBackTest = useCallback(() => {
     const events = backTestMarketDataWithStrategy(
       marketData,
-      'emaCrossStrategy',
+      "emaCrossStrategy"
       // 'emaCrossRetraceToMaStrategy',
     );
-    console.log('events', events);
+    console.log("events", events);
     const profit = calcProfitFromEvents(events);
-    console.log('PROFIT', profit);
+    console.log("PROFIT", profit);
 
     const backTestData = [...calculatedMarketData];
     // Get event index within market data array.
     const backtestEventsWithIndex = events.map((event) => {
       const dataIndex = calculatedMarketData.findIndex(
-        (data) => data.time === event.time,
+        (data) => data.time === event.time
       );
 
       return { ...event, index: dataIndex };
@@ -575,10 +600,10 @@ const MarketContainer = () => {
     backtestEventsWithIndex.forEach((event, index) => {
       let profit = 0;
       if (
-        event.type === 'entry' &&
+        event.type === "entry" &&
         backtestEventsWithIndex.length > index + 1
       ) {
-        if (event.position === 'long') {
+        if (event.position === "long") {
           profit =
             backTestData[backtestEventsWithIndex[index + 1].index].close -
             backTestData[event.index].close;
@@ -587,8 +612,8 @@ const MarketContainer = () => {
             backTestData[event.index].close -
             backTestData[backtestEventsWithIndex[index + 1].index].close;
         }
-      } else if (event.type === 'exit') {
-        if (event.position === 'long') {
+      } else if (event.type === "exit") {
+        if (event.position === "long") {
           profit =
             backTestData[event.index].close -
             backTestData[backtestEventsWithIndex[index - 1].index].close;
@@ -688,13 +713,13 @@ const MarketContainer = () => {
       backTestNumberLossTrades={backTestNumberLossTrades}
       numBackTestEntries={backTestEvents.reduce(
         (accumulator, currentValue) =>
-          currentValue.type === 'entry' ? accumulator + 1 : accumulator,
-        0,
+          currentValue.type === "entry" ? accumulator + 1 : accumulator,
+        0
       )}
       numBackTestExits={backTestEvents.reduce(
         (accumulator, currentValue) =>
-          currentValue.type === 'exit' ? accumulator + 1 : accumulator,
-        0,
+          currentValue.type === "exit" ? accumulator + 1 : accumulator,
+        0
       )}
       isBackTestPanelVisible={isBackTestPanelVisible}
       toggleBackTestPanel={toggleBackTestPanel}

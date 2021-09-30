@@ -1,3 +1,4 @@
+import { toMilliseconds } from '../../util/time';
 import { calculateMA } from '../metrics/ma';
 
 // Adds smoothened value to a market price data array by averaging a price in time by the
@@ -165,5 +166,81 @@ export const calcDataArrayMA = (
     const ma = total / observableData.length;
 
     return { ...priceData, [id ? id : 'ma']: ma };
+  });
+};
+
+// Calculates pivot point using https://www.daytrading.com/pivot-points
+// Support resistance calculated using fibonnaci found here... https://www.babypips.com/learn/forex/other-pivot-point-calculation-methods
+export const calcDataArrayPP = (
+  dataArray: any[],
+  dailyDataArray: any[],
+  res: number,
+  id?: string,
+): any[] => {
+  if (!dataArray || !dataArray[dataArray.length - 1]) return dataArray;
+
+  // If resolution matches or is smaller then the resolution of the data array then abort.
+  // Can only calculate with a resolution smaller then that of the dataArrays.
+  if (
+    res <=
+    dataArray[dataArray.length - 1].time - dataArray[dataArray.length - 2].time
+  ) {
+    return dataArray;
+  }
+
+  // const pp = [High(previous) + Low(previous) + Close(previous)] / 3;
+
+  // XXX DITCH DAILYDATAARRAY - instead compress dataArray.
+  // XXX Start at index 1 and locate the first index that has a start time that
+  // equals the starttime with milliseconds set to 0
+  console.log('hereeee', dailyDataArray);
+
+  // console.log(
+  //   new Date(dailyDataArray[dailyDataArray.length - 1].startTime).getTime(),
+  //   dailyDataArray[dailyDataArray.length - 1].time
+  // );
+
+  // startTime and time
+
+  return dataArray.map((priceData, i) => {
+    // const date = new Date(priceData.startTime);
+
+    const yesterdaysData = dailyDataArray.find((dayData) => {
+      // const dayDataDate = new Date(dayData.startTime);
+      console.log(priceData.time, dayData.time);
+
+      const yesterdaysTime = priceData.time - res;
+      if (
+        yesterdaysTime >= dayData.time &&
+        yesterdaysTime < dayData.time + res
+      ) {
+        console.log('pass');
+        return dayData;
+      } else {
+        console.log('fail');
+      }
+    });
+
+    if (!yesterdaysData) return priceData;
+
+    console.log('DAY', yesterdaysData);
+    // priceData.startTime
+    console.log(new Date(priceData.startTime).getUTCHours());
+    // const observableData = dataArray.slice(i - period, i);
+    // const total = observableData.reduce(
+    //   (total: number, item) => total + item[key],
+    //   0
+    // );
+
+    // const ma = total / observableData.length;
+    const { high, low, close } = yesterdaysData;
+    const pp = (high + low + close) / 3;
+    const r1 = pp + (high - low) * 0.382;
+    const r2 = pp + (high - low) * 0.618;
+    const r3 = pp + (high - low) * 1;
+    const s1 = pp - (high - low) * 0.382;
+    const s2 = pp - (high - low) * 0.618;
+    const s3 = pp - (high - low) * 1;
+    return { ...priceData, [id ? id : 'pp']: pp, r1, r2, r3, s1, s2, s3 };
   });
 };
