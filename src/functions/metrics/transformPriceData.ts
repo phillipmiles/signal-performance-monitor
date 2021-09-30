@@ -169,7 +169,7 @@ export const calcDataArrayMA = (
   });
 };
 
-// Calculates pivot point using https://www.daytrading.com/pivot-points
+// Calculates standard pivot point using https://www.daytrading.com/pivot-points
 // Support resistance calculated using fibonnaci found here... https://www.babypips.com/learn/forex/other-pivot-point-calculation-methods
 export const calcDataArrayPP = (
   dataArray: any[],
