@@ -171,6 +171,7 @@ export const calcDataArrayMA = (
   });
 };
 
+// Calculates vwap as per https://academy.binance.com/en/articles/volume-weighted-average-price-vwap-explained
 export const calcDataArrayVWAP = (
   dataArray: any[],
   volumeKey: string,
@@ -190,7 +191,6 @@ export const calcDataArrayVWAP = (
 
     const n1 = typicalPrice * volume;
 
-    console.log(dateTime.getUTCHours());
     // Reset sum numbers at the start of each day.
     if (dateTime.getUTCHours() === 0 && dateTime.getUTCMinutes() === 0) {
       sumN1 = n1;
@@ -199,7 +199,6 @@ export const calcDataArrayVWAP = (
       sumN1 = sumN1 + n1;
       sumVolume = sumVolume + volume;
     }
-    console.log(sumVolume);
 
     const vwap = sumN1 / sumVolume;
 

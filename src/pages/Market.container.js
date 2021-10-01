@@ -23,6 +23,7 @@ import {
 } from "../functions/metrics/transformPriceData";
 import { findDataArrayMinimaMaxima } from "../functions/util/findMinimaMaxima";
 import { emaCross } from "../functions/indicators/emaCross";
+import { stochasticCross } from "../functions/indicators/stochasticCross";
 import {
   backTestMarketDataWithStrategy,
   calcProfitFromEvents,
@@ -314,44 +315,48 @@ const MarketContainer = () => {
         calcDataArrayMA(
           calcDataArrayMA(
             calcDataArrayMA(
-              emaCross(
-                fullSTO(
-                  rsiCalculator(
-                    calcDataArrayMomentum(
+              stochasticCross(
+                emaCross(
+                  fullSTO(
+                    rsiCalculator(
                       calcDataArrayMomentum(
-                        emaLong(
-                          // calcDataArrayDirectionExtremes(
-                          calcDataArraySmooth(
-                            // calcDataArraySmoothAvg(
-                            emaDouble(emaShort(marketData)),
-                            //   period / 2,
-                            //   ['high', 'low'],
-                            //   'smoothAvg',
+                        calcDataArrayMomentum(
+                          emaLong(
+                            // calcDataArrayDirectionExtremes(
+                            calcDataArraySmooth(
+                              // calcDataArraySmoothAvg(
+                              emaDouble(emaShort(marketData)),
+                              //   period / 2,
+                              //   ['high', 'low'],
+                              //   'smoothAvg',
+                              // ),
+                              period / 2,
+                              "close",
+                              "smooth"
+                            )
+                            //   10,
+                            //   '',
+                            //   'high',
+                            //   'low',
+                            //   // 'smooth',
+                            //   'smoothDirectionExtremes',
                             // ),
-                            period / 2,
-                            "close",
-                            "smooth"
-                          )
-                          //   10,
-                          //   '',
-                          //   'high',
-                          //   'low',
-                          //   // 'smooth',
-                          //   'smoothDirectionExtremes',
-                          // ),
+                          ),
+                          period / 2,
+                          "smooth", // USE smooth OR emaDouble
+                          "momentum1"
                         ),
                         period / 2,
-                        "smooth", // USE smooth OR emaDouble
-                        "momentum1"
-                      ),
-                      period / 2,
-                      "momentum1",
-                      "momentum2"
+                        "momentum1",
+                        "momentum2"
+                      )
                     )
-                  )
+                  ),
+                  "emaShort",
+                  "emaLong"
                 ),
-                "emaShort",
-                "emaLong"
+                "fullSTO",
+                "fullSTO"
               ),
               20,
               "close",
