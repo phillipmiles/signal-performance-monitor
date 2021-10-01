@@ -98,14 +98,19 @@ const MarketChart = ({
   const stochasticYAccessor = (d) => d.fullSTO;
   const stochasticOrigin = (_, h) => [
     0,
-    h - stochasticChartHeight - rsiChartHeight - barChartHeight,
+    h -
+      stochasticChartHeight -
+      //- rsiChartHeight
+      barChartHeight,
   ];
 
-  const candleChartHeight = height - margin.top - margin.bottom;
-  //-
-  // rsiChartHeight -
-  // barChartHeight -
-  // stochasticChartHeight;
+  const candleChartHeight =
+    height -
+    margin.top -
+    margin.bottom -
+    // rsiChartHeight -
+    barChartHeight -
+    stochasticChartHeight;
 
   const annotationWhen = (d) => {
     if (d.indicators !== undefined) {
@@ -253,10 +258,16 @@ const MarketChart = ({
           /> */}
 
           <LineSeries
+            yAccessor={(d) => d.vwap}
+            strokeStyle="#AAFF11"
+            strokeWidth={1}
+          />
+
+          {/* <LineSeries
             yAccessor={(d) => d.smooth}
             strokeStyle="#00FF11"
             strokeWidth={2}
-          />
+          /> */}
           <LineSeries
             yAccessor={(d) => d.pp}
             strokeStyle="#00FF11"
@@ -385,8 +396,8 @@ const MarketChart = ({
             ]}
           />
         </Chart>
-        {/* <Chart
-          id={'stochastic'}
+        <Chart
+          id={"stochastic"}
           height={stochasticChartHeight}
           origin={stochasticOrigin}
           yExtents={stochasticYExtents}
@@ -405,8 +416,8 @@ const MarketChart = ({
           />
           <StochasticSeries yAccessor={stochasticYAccessor} />
         </Chart>
-        <Chart
-          id={'rsi'}
+        {/* <Chart
+          id={"rsi"}
           yExtents={rsiYExtents}
           height={rsiChartHeight}
           origin={rsiChartOrigin}
@@ -429,9 +440,9 @@ const MarketChart = ({
             yAccessor={rsiYAccessor}
             options={rsiOptions}
           />
-        </Chart>
+        </Chart> */}
         <Chart
-          id={'volume'}
+          id={"volume"}
           height={barChartHeight}
           origin={barChartOrigin}
           yExtents={barChartExtents}
@@ -448,7 +459,7 @@ const MarketChart = ({
             ticks={20}
           />
           <BarSeries yAccessor={volumeSeries} />
-        </Chart> */}
+        </Chart>
       </ChartCanvas>
     );
   } else {

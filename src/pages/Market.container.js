@@ -15,6 +15,7 @@ import {
 import {
   calcDataArrayMomentum,
   calcDataArraySmooth,
+  calcDataArrayVWAP,
   calcDataArraySmoothAvg,
   calcDataArrayMA,
   calcDataArrayPP,
@@ -309,59 +310,63 @@ const MarketContainer = () => {
 
   useEffect(() => {
     let calculatedData = calcDataArrayPP(
-      calcDataArrayMA(
+      calcDataArrayVWAP(
         calcDataArrayMA(
           calcDataArrayMA(
-            emaCross(
-              fullSTO(
-                rsiCalculator(
-                  calcDataArrayMomentum(
+            calcDataArrayMA(
+              emaCross(
+                fullSTO(
+                  rsiCalculator(
                     calcDataArrayMomentum(
-                      emaLong(
-                        // calcDataArrayDirectionExtremes(
-                        calcDataArraySmooth(
-                          // calcDataArraySmoothAvg(
-                          emaDouble(emaShort(marketData)),
-                          //   period / 2,
-                          //   ['high', 'low'],
-                          //   'smoothAvg',
+                      calcDataArrayMomentum(
+                        emaLong(
+                          // calcDataArrayDirectionExtremes(
+                          calcDataArraySmooth(
+                            // calcDataArraySmoothAvg(
+                            emaDouble(emaShort(marketData)),
+                            //   period / 2,
+                            //   ['high', 'low'],
+                            //   'smoothAvg',
+                            // ),
+                            period / 2,
+                            "close",
+                            "smooth"
+                          )
+                          //   10,
+                          //   '',
+                          //   'high',
+                          //   'low',
+                          //   // 'smooth',
+                          //   'smoothDirectionExtremes',
                           // ),
-                          period / 2,
-                          "close",
-                          "smooth"
-                        )
-                        //   10,
-                        //   '',
-                        //   'high',
-                        //   'low',
-                        //   // 'smooth',
-                        //   'smoothDirectionExtremes',
-                        // ),
+                        ),
+                        period / 2,
+                        "smooth", // USE smooth OR emaDouble
+                        "momentum1"
                       ),
                       period / 2,
-                      "smooth", // USE smooth OR emaDouble
-                      "momentum1"
-                    ),
-                    period / 2,
-                    "momentum1",
-                    "momentum2"
+                      "momentum1",
+                      "momentum2"
+                    )
                   )
-                )
+                ),
+                "emaShort",
+                "emaLong"
               ),
-              "emaShort",
-              "emaLong"
+              20,
+              "close",
+              "ma20"
             ),
-            20,
+            100,
             "close",
-            "ma20"
+            "ma100"
           ),
-          100,
+          200,
           "close",
-          "ma100"
+          "ma200"
         ),
-        200,
-        "close",
-        "ma200"
+        "volume",
+        "close"
       ),
       dailyMarketData,
       toMilliseconds(1, "days"),
@@ -553,24 +558,24 @@ const MarketContainer = () => {
           },
         });
 
-        // level.points.forEach((point) => {
-        //   chartRays.push({
-        //     type: "LINE",
-        //     selected: false,
-        //     // Size of x axies is from 0 to number of data points.
-        //     start: [point.x, point.y],
-        //     end: [point.x + 1, point.y],
-        //     appearance: {
-        //       edgeFill: "#FFFFFF",
-        //       edgeStroke: "#000000",
-        //       edgeStrokeWidth: 1,
-        //       r: 6,
-        //       strokeDasharray: "Solid",
-        //       strokeStyle: theme.colors.chart.strength[strengthDisplayVal],
-        //       strokeWidth: 8,
-        //     },
-        //   });
-        // });
+        level.points.forEach((point) => {
+          chartRays.push({
+            type: "LINE",
+            selected: false,
+            // Size of x axies is from 0 to number of data points.
+            start: [point.x, point.y],
+            end: [point.x + 1, point.y],
+            appearance: {
+              edgeFill: "#FFFFFF",
+              edgeStroke: "#000000",
+              edgeStrokeWidth: 1,
+              r: 6,
+              strokeDasharray: "Solid",
+              strokeStyle: theme.colors.chart.strength[strengthDisplayVal],
+              strokeWidth: 8,
+            },
+          });
+        });
       });
 
       setTrends([...chartRays, ...linesToSave]);

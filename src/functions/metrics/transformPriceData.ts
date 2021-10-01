@@ -1,6 +1,8 @@
 import { toMilliseconds } from "../../util/time";
 import { calculateMA } from "../metrics/ma";
 
+const calcTypicalPrice = (high, low, close) => (high + low + close) / 3;
+
 // Adds smoothened value to a market price data array by averaging a price in time by the
 // neighbouring price points where number of neighbouring points used either side of a price
 // is dictated by the 'smoothFactor'. A larger smoothFactor = more points used in averaging
@@ -169,6 +171,46 @@ export const calcDataArrayMA = (
   });
 };
 
+export const calcDataArrayVWAP = (
+  dataArray: any[],
+  volumeKey: string,
+  priceKey: string,
+  id?: string
+): any[] => {
+  const newDataArray = [];
+
+  let sumN1 = 0;
+  let sumVolume = 0;
+
+  dataArray.forEach((priceData, i) => {
+    const { high, low, close, volume, time } = priceData;
+
+    const dateTime = new Date(time);
+    const typicalPrice = calcTypicalPrice(high, low, close);
+
+    const n1 = typicalPrice * volume;
+
+    console.log(dateTime.getUTCHours());
+    // Reset sum numbers at the start of each day.
+    if (dateTime.getUTCHours() === 0 && dateTime.getUTCMinutes() === 0) {
+      sumN1 = n1;
+      sumVolume = volume;
+    } else {
+      sumN1 = sumN1 + n1;
+      sumVolume = sumVolume + volume;
+    }
+    console.log(sumVolume);
+
+    const vwap = sumN1 / sumVolume;
+
+    newDataArray.push({
+      ...priceData,
+      [id ? id : "vwap"]: vwap,
+    });
+  });
+  return newDataArray;
+};
+
 // Calculates standard pivot point using https://www.daytrading.com/pivot-points
 // Support resistance calculated using fibonnaci found here... https://www.babypips.com/learn/forex/other-pivot-point-calculation-methods
 export const calcDataArrayPP = (
@@ -202,7 +244,7 @@ export const calcDataArrayPP = (
     if (!yesterdaysData) return priceData;
 
     const { high, low, close } = yesterdaysData;
-    const pp = (high + low + close) / 3;
+    const pp = calcTypicalPrice(high, low, close);
 
     // Fibonacci
     const r1 = pp + (high - low) * 0.382;
