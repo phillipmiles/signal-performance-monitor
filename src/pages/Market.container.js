@@ -24,6 +24,7 @@ import {
 import { findDataArrayMinimaMaxima } from "../functions/util/findMinimaMaxima";
 import { emaCross } from "../functions/indicators/emaCross";
 import { stochasticCross } from "../functions/indicators/stochasticCross";
+import { vwapCross } from "../functions/indicators/vwapCross";
 import {
   backTestMarketDataWithStrategy,
   calcProfitFromEvents,
@@ -311,67 +312,70 @@ const MarketContainer = () => {
 
   useEffect(() => {
     let calculatedData = calcDataArrayPP(
-      calcDataArrayVWAP(
-        calcDataArrayMA(
+      vwapCross(
+        calcDataArrayVWAP(
           calcDataArrayMA(
             calcDataArrayMA(
-              stochasticCross(
-                emaCross(
-                  fullSTO(
-                    rsiCalculator(
-                      calcDataArrayMomentum(
+              calcDataArrayMA(
+                stochasticCross(
+                  emaCross(
+                    fullSTO(
+                      rsiCalculator(
                         calcDataArrayMomentum(
-                          emaLong(
-                            // calcDataArrayDirectionExtremes(
-                            calcDataArraySmooth(
-                              // calcDataArraySmoothAvg(
-                              emaDouble(emaShort(marketData)),
-                              //   period / 2,
-                              //   ['high', 'low'],
-                              //   'smoothAvg',
+                          calcDataArrayMomentum(
+                            emaLong(
+                              // calcDataArrayDirectionExtremes(
+                              calcDataArraySmooth(
+                                // calcDataArraySmoothAvg(
+                                emaDouble(emaShort(marketData)),
+                                //   period / 2,
+                                //   ['high', 'low'],
+                                //   'smoothAvg',
+                                // ),
+                                period / 2,
+                                "close",
+                                "smooth"
+                              )
+                              //   10,
+                              //   '',
+                              //   'high',
+                              //   'low',
+                              //   // 'smooth',
+                              //   'smoothDirectionExtremes',
                               // ),
-                              period / 2,
-                              "close",
-                              "smooth"
-                            )
-                            //   10,
-                            //   '',
-                            //   'high',
-                            //   'low',
-                            //   // 'smooth',
-                            //   'smoothDirectionExtremes',
-                            // ),
+                            ),
+                            period / 2,
+                            "smooth", // USE smooth OR emaDouble
+                            "momentum1"
                           ),
                           period / 2,
-                          "smooth", // USE smooth OR emaDouble
-                          "momentum1"
-                        ),
-                        period / 2,
-                        "momentum1",
-                        "momentum2"
+                          "momentum1",
+                          "momentum2"
+                        )
                       )
-                    )
+                    ),
+                    "emaShort",
+                    "emaLong"
                   ),
-                  "emaShort",
-                  "emaLong"
+                  "fullSTO",
+                  "fullSTO"
                 ),
-                "fullSTO",
-                "fullSTO"
+                20,
+                "close",
+                "ma20"
               ),
-              20,
+              100,
               "close",
-              "ma20"
+              "ma100"
             ),
-            100,
+            200,
             "close",
-            "ma100"
+            "ma200"
           ),
-          200,
-          "close",
-          "ma200"
+          "volume",
+          "close"
         ),
-        "volume",
-        "close"
+        "vwap"
       ),
       dailyMarketData,
       toMilliseconds(1, "days"),

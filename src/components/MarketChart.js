@@ -124,6 +124,30 @@ const MarketChart = ({
     return false;
   };
 
+  const annotationVwapWhen = (d) => {
+    if (d.indicators !== undefined) {
+      const vwapCrossIndicator = d.indicators.find(
+        (indicator) => indicator.id === "vwap-cross"
+      );
+      if (vwapCrossIndicator) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const annotationStochasticCross = (d) => {
+    if (d.indicators !== undefined) {
+      const emaCrossIndicator = d.indicators.find(
+        (indicator) => indicator.id === "stochastic-cross"
+      );
+      if (emaCrossIndicator) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const backtestEntryAnnotationWhen = (d) => {
     if (d.backtestEvents !== undefined) {
       const entryEvents = d.backtestEvents.filter(
@@ -156,6 +180,26 @@ const MarketChart = ({
     pathHeight: 22,
     tooltip: "Go short",
     y: ({ yScale, datum }) => yScale(datum.emaShort),
+  };
+
+  const annotation2 = {
+    fill: "#2196f3",
+    path: () =>
+      "M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z",
+    pathWidth: 12,
+    pathHeight: 22,
+    tooltip: "Go short",
+    y: ({ yScale, datum }) => yScale(datum.fullSTO.K),
+  };
+
+  const annotationVwap = {
+    fill: "#2196f3",
+    path: () =>
+      "M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z",
+    pathWidth: 12,
+    pathHeight: 22,
+    tooltip: "Go short",
+    y: ({ yScale, datum }) => yScale(datum.vwap),
   };
 
   const backTestEntryAnnotation = {
@@ -352,10 +396,15 @@ const MarketChart = ({
             onComplete={onDrawTrendComplete}
             trends={trends}
           />
-          <Annotate
+          {/* <Annotate
             with={SvgPathAnnotation}
             usingProps={annotation}
             when={annotationWhen}
+          /> */}
+          <Annotate
+            with={SvgPathAnnotation}
+            usingProps={annotationVwap}
+            when={annotationVwapWhen}
           />
           <Annotate
             with={SvgPathAnnotation}
@@ -402,6 +451,11 @@ const MarketChart = ({
           origin={stochasticOrigin}
           yExtents={stochasticYExtents}
         >
+          <Annotate
+            with={SvgPathAnnotation}
+            usingProps={annotation2}
+            when={annotationStochasticCross}
+          />
           <XAxis
             ticks={0}
             strokeStyle={styleAxisColor}
