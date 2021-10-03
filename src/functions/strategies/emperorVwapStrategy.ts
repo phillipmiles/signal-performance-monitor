@@ -5,6 +5,7 @@ import {
 } from "../metrics/transformPriceData";
 import { stochasticCross } from "../indicators/stochasticCross";
 import { vwapCross } from "../indicators/vwapCross";
+import { swingHigh, swingLow } from "../indicators/swing";
 import { toMilliseconds, toSeconds } from "../../util/time";
 import ftxapi from "../../api/ftx/api";
 
@@ -108,19 +109,13 @@ const findEntry = (marketData) => {
   const recentMarketData = [...preparedMarketData].splice(
     preparedMarketData.length - NUM_DATA_TO_OBSERVE
   );
-  console.log("REVENT", recentMarketData);
 
   // - Need to check candle patterns
-  // - Need to check expanding volume
-  // - Need to check cross over types - bullish/bearish
   // - Might need to further confirm/check that a pivot point is actually acting
   // as a support / resistance.
   // - Do a different strategy that is basically an indicator overkill, only acts
   // when all the indicators say the same thing.
-  // - Need to confirm price movement on following candle
   recentMarketData.forEach((item, index) => {
-    console.log("item", item);
-
     if (item.indicators) {
       const vwapIndicator = item.indicators.find(
         (indicator) => indicator.id === "vwap-cross"
@@ -166,8 +161,6 @@ const findEntry = (marketData) => {
   }
 
   if (stochasticCrossType && vwapCrossType) {
-    console.log(stochasticCrossType, vwapCrossType);
-
     // If current is same candle as the candle that all critira was first met
     // then skip it. Need to wait for next candle to observe confirmation
     // of price movement.
@@ -177,6 +170,7 @@ const findEntry = (marketData) => {
       if (expandingVolumeIndex === NUM_DATA_TO_OBSERVE - 2) {
         // Find index of criteria
         let positionType;
+        let entryPrice;
 
         if (stochasticCrossType === "bullish" && vwapCrossType === "bullish") {
           if (
@@ -184,6 +178,7 @@ const findEntry = (marketData) => {
             preparedMarketData[preparedMarketData.length - 2].high
           ) {
             positionType = "long";
+            entryPrice = preparedMarketData[preparedMarketData.length - 2].high;
           }
         } else if (
           stochasticCrossType === "bearish" &&
@@ -193,12 +188,13 @@ const findEntry = (marketData) => {
             current.low < preparedMarketData[preparedMarketData.length - 2].low
           ) {
             positionType = "short";
+            entryPrice = preparedMarketData[preparedMarketData.length - 2].low;
           }
         }
 
         if (positionType) {
           return {
-            price: current.close,
+            price: entryPrice,
             position: positionType,
             time: current.time,
             // stopLossPrice: 0.5,
@@ -286,43 +282,90 @@ const findEntry = (marketData) => {
   return;
 };
 
+export function findLastIndex<T>(
+  array: Array<T>,
+  predicate: (value: T, index: number, obj: T[]) => boolean
+): number {
+  let l = array.length;
+  while (l--) {
+    if (predicate(array[l], l, array)) return l;
+  }
+  return -1;
+}
+
 const findInvalidation = (marketData, entry) => {
-  const preparedMarketData = prepareMarketData(
-    marketData.resolution,
-    marketData.daily
+  const preparedMarketData = swingLow(
+    swingHigh(prepareMarketData(marketData.resolution, marketData.daily))
   );
 
   const current = preparedMarketData[preparedMarketData.length - 1];
 
-  console.log("entry", entry);
+  // const swingLowIndex = preparedMarketData
+  //   .slice()
+  //   .reverse()
+  //   .findIndex(
+  //     (item) =>
+  //       item.indicators &&
+  //       item.indicators.find((indicator) => indicator.id === "swingLow")
+  //   );
 
-  if (current.indicators) {
-    const stochasticIndicator = current.indicators.find(
-      (indicator) => indicator.id === "stochastic-cross"
-    );
+  const swingLowIndex = findLastIndex(
+    preparedMarketData,
+    (item) =>
+      item.indicators &&
+      item.indicators.find((indicator) => indicator.id === "swingLow")
+  );
 
-    if (stochasticIndicator) {
-      if (entry.position === "short") {
-        if (stochasticIndicator.data.type === "bullish") {
-          return {
-            price: current.close,
-            position: entry.position,
-            volume: "all of it",
-            time: current.time,
-          };
-        }
-      } else if (entry.position === "long") {
-        if (stochasticIndicator.data.type === "bearish") {
-          return {
-            price: current.close,
-            position: entry.position,
-            volume: "all of it",
-            time: current.time,
-          };
-        }
-      }
+  const swingHighIndex = findLastIndex(
+    preparedMarketData,
+    (item) =>
+      item.indicators &&
+      item.indicators.find((indicator) => indicator.id === "swingHigh")
+  );
+
+  console.log("entry", entry, swingLowIndex, preparedMarketData[swingLowIndex]);
+
+  if (entry.position === "short") {
+    if (current.high >= preparedMarketData[swingHighIndex].high) {
+      return {
+        price: current.close,
+        position: entry.position,
+        volume: "all of it",
+        time: current.time,
+      };
+    }
+  } else if (entry.position === "long") {
+    if (current.low <= preparedMarketData[swingLowIndex].low) {
+      return {
+        price: current.close,
+        position: entry.position,
+        volume: "all of it",
+        time: current.time,
+      };
     }
   }
+
+  // if (current.indicators) {
+  //   const stochasticIndicator = current.indicators.find(
+  //     (indicator) => indicator.id === "stochastic-cross"
+  //   );
+
+  //   // if (stochasticIndicator) {
+
+  //   // }
+  //   if (entry.position === "long") {
+  //     if (stochasticIndicator) {
+  //       if (stochasticIndicator.data.type === "bearish") {
+  //         return {
+  //           price: current.close,
+  //           position: entry.position,
+  //           volume: "all of it",
+  //           time: current.time,
+  //         };
+  //       }
+  //     }
+  //   }
+  // }
 };
 
 export default {
