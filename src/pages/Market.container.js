@@ -29,9 +29,12 @@ import { swingHigh, swingLow } from "../functions/indicators/swing";
 
 import {
   backTestMarketDataWithStrategy,
-  calcProfitFromEvents,
+  // calcProfitFromEvents,
 } from "../functions/strategies/backTest";
-import { backTestWithStrategy } from "../functions/strategies/backTestv2";
+import {
+  backTestWithStrategy,
+  calcProfitFromEvents,
+} from "../functions/strategies/backTestv2";
 
 import {
   calcLevelStrength,
@@ -689,23 +692,15 @@ const MarketContainer = () => {
         backtestEventsWithIndex.length > index + 1
       ) {
         if (event.position === "long") {
-          profit =
-            backTestData[backtestEventsWithIndex[index + 1].index].close -
-            backTestData[event.index].close;
+          profit = backtestEventsWithIndex[index + 1].price - event.price;
         } else {
-          profit =
-            backTestData[event.index].close -
-            backTestData[backtestEventsWithIndex[index + 1].index].close;
+          profit = event.price - backtestEventsWithIndex[index + 1].price;
         }
       } else if (event.type === "exit") {
         if (event.position === "long") {
-          profit =
-            backTestData[event.index].close -
-            backTestData[backtestEventsWithIndex[index - 1].index].close;
+          profit = event.price - backtestEventsWithIndex[index - 1].price;
         } else {
-          profit =
-            backTestData[backtestEventsWithIndex[index - 1].index].close -
-            backTestData[event.index].close;
+          profit = backtestEventsWithIndex[index - 1].price - event.price;
         }
       }
       const eventData = {

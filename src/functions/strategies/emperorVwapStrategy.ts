@@ -110,6 +110,8 @@ const findEntry = (marketData) => {
     preparedMarketData.length - NUM_DATA_TO_OBSERVE
   );
 
+  // - Need to improve volume expansion. It picks up shitty expansions that are really small
+  // and meaningless.
   // - Need to check candle patterns
   // - Might need to further confirm/check that a pivot point is actually acting
   // as a support / resistance.
@@ -323,12 +325,16 @@ const findInvalidation = (marketData, entry) => {
       item.indicators.find((indicator) => indicator.id === "swingHigh")
   );
 
-  console.log("entry", entry, swingLowIndex, preparedMarketData[swingLowIndex]);
-
   if (entry.position === "short") {
     if (current.high >= preparedMarketData[swingHighIndex].high) {
+      console.log(
+        "entry",
+        entry,
+        swingHighIndex,
+        preparedMarketData[swingHighIndex]
+      );
       return {
-        price: current.close,
+        price: preparedMarketData[swingHighIndex].high,
         position: entry.position,
         volume: "all of it",
         time: current.time,
@@ -337,7 +343,7 @@ const findInvalidation = (marketData, entry) => {
   } else if (entry.position === "long") {
     if (current.low <= preparedMarketData[swingLowIndex].low) {
       return {
-        price: current.close,
+        price: preparedMarketData[swingLowIndex].low,
         position: entry.position,
         volume: "all of it",
         time: current.time,
