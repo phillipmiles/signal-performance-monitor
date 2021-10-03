@@ -1,14 +1,14 @@
 /** @jsx jsx */
-import { jsx, Flex } from 'theme-ui';
-import { useRecoilValue } from 'recoil';
-import { signalsState, marketHistoricalPricesState } from '../state/signals';
-import ActivityIndicator from '../components/ActivityIndicator';
-import Paragraph from './generic/Paragraph';
-import Text from './generic/Text';
-import Heading from './generic/Heading';
-import { useEffect, useState, useCallback, Fragment, useMemo } from 'react';
-import ftxapi from '../api/ftx/api';
-import { toMilliseconds, toSeconds } from '../util/time';
+import { jsx, Flex } from "theme-ui";
+import { useRecoilValue } from "recoil";
+import { signalsState, marketHistoricalPricesState } from "../state/signals";
+import ActivityIndicator from "../components/ActivityIndicator";
+import Paragraph from "./generic/Paragraph";
+import Text from "./generic/Text";
+import Heading from "./generic/Heading";
+import { useEffect, useState, useCallback, Fragment, useMemo } from "react";
+import ftxapi from "../api/ftx/api";
+import { toMilliseconds, toSeconds } from "../util/time";
 
 const calcROI = (initialVal, finalVal, cost) =>
   ((finalVal - initialVal) / cost) * 100;
@@ -28,16 +28,16 @@ const SignalPerformance = ({
   //     startTime: startTime,
   //   }),
   // );
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [prices, setPrice] = useState([]);
   const [currentStopLossPrice, setCurrentStopLossPrice] = useState(
-    stopLossPrice,
+    stopLossPrice
   );
   const [targetHitIndices, setTargetHitIndices] = useState([]);
   const [stopLossHitIndex, setStopLossHitIndex] = useState();
   // ROI percentage if stoploss is hit, includes any profit taken.
   const [minimumROI, setMinimumROI] = useState(
-    calcROI(targetEntryPrice, stopLossPrice, targetEntryPrice),
+    calcROI(targetEntryPrice, stopLossPrice, targetEntryPrice)
   );
   const [enterIndex, setEnterIndex] = useState();
   const [entryPrice, setEntryPrice] = useState();
@@ -49,7 +49,7 @@ const SignalPerformance = ({
         const response = await ftxapi.getHistoricalPrices(
           marketId,
           resolution,
-          startTime,
+          startTime
         );
         const data = response.data.result;
 
@@ -57,32 +57,32 @@ const SignalPerformance = ({
         // item.
         if (
           data[data.length - 1].time <
-          new Date().getTime() - toMilliseconds(1, 'hours')
+          new Date().getTime() - toMilliseconds(1, "hours")
         ) {
-          console.log('do a thing');
+          console.log("do a thing");
           data.push(
-            await fetchData(marketId, resolution, data[data.length - 1].time),
+            await fetchData(marketId, resolution, data[data.length - 1].time)
           );
         }
 
         return data;
       };
-      console.log('start time', startTime);
+      console.log("start time", startTime);
       try {
         const prices = await fetchData(
           marketId,
           resolution,
           // Need to take an hour off start time so we get the candle that
           // the startTime value is a part of.
-          startTime - toMilliseconds(1, 'hours'),
+          startTime - toMilliseconds(1, "hours")
         );
         setPrice(prices);
         console.log(prices);
       } catch (error) {
-        setError('There was an error');
+        setError("There was an error");
       }
     },
-    [],
+    []
   );
 
   useEffect(() => {
@@ -97,16 +97,16 @@ const SignalPerformance = ({
     let entryPrice;
     // let priceChange =
 
-    console.log('ROI', stopLossHitROI);
+    console.log("ROI", stopLossHitROI);
     prices.forEach((price, index) => {
       // Check for entry
       // This is a little inprecise. Takes opening price for the hour.
       if (enterIndex === undefined) {
-        if (side === 'buy' && price.low < targetEntryPrice) {
+        if (side === "buy" && price.low < targetEntryPrice) {
           entryPrice = price.open < targetEntryPrice ? price.open : price.low;
           enterIndex = index;
           stopLossHitROI = calcROI(entryPrice, stopLossPrice, entryPrice);
-        } else if (side === 'sell' && price.high > targetEntryPrice) {
+        } else if (side === "sell" && price.high > targetEntryPrice) {
           entryPrice = price.open < targetEntryPrice ? price.open : price.low;
           enterIndex = index;
           stopLossHitROI = calcROI(entryPrice, stopLossPrice, entryPrice);
@@ -115,9 +115,9 @@ const SignalPerformance = ({
 
       // Check for stoploss hit
       if (enterIndex !== undefined && !stopLossIndex) {
-        if (side === 'buy' && price.low < currentStopLossPrice) {
+        if (side === "buy" && price.low < currentStopLossPrice) {
           stopLossIndex = index;
-        } else if (side === 'sell' && price.high > currentStopLossPrice) {
+        } else if (side === "sell" && price.high > currentStopLossPrice) {
           stopLossIndex = index;
         }
       }
@@ -128,7 +128,7 @@ const SignalPerformance = ({
       // Check for target hits
       if (targetIndices.length < targets.length) {
         // XXXXX This doesn't work if multiple targets are hit in the same candle.
-        if (side === 'buy' && price.high > targets[targetIndices.length]) {
+        if (side === "buy" && price.high > targets[targetIndices.length]) {
           // percentageInvested;
           // const profit = targets[targetIndices.length] - targetEntryPrice;
           targetIndices.push(index);
@@ -138,7 +138,7 @@ const SignalPerformance = ({
             currentStopLossPrice = targets[targetIndices.length - 2];
           }
           // Take 20% off investment quantity
-          console.log('HEEEEEERERERE!!!');
+          console.log("HEEEEEERERERE!!!");
           // investmentQuantity = investmentQuantity - investmentQuantity * 0.2;
           let quantity = 1;
           let securedProfit = 0;
@@ -152,15 +152,15 @@ const SignalPerformance = ({
             securedProfit,
             quantity,
             currentStopLossPrice,
-            quantity * currentStopLossPrice,
+            quantity * currentStopLossPrice
           );
           stopLossHitROI = calcROI(
             entryPrice,
             quantity * currentStopLossPrice + securedProfit,
-            entryPrice,
+            entryPrice
           );
         } else if (
-          side === 'sell' &&
+          side === "sell" &&
           price.low < targets[targetIndices.length]
         ) {
           targetIndices.push(index);
@@ -172,7 +172,7 @@ const SignalPerformance = ({
           stopLossHitROI = calcROI(
             entryPrice,
             currentStopLossPrice,
-            entryPrice,
+            entryPrice
           );
         }
       }
@@ -199,20 +199,20 @@ t2 $140   0.64 0.16 (20%)  20% profit   140 * 0.2 = $24
 
 */
   useEffect(() => {
-    getHistoricalPrices(id, toSeconds(1, 'hours'), startTime);
+    getHistoricalPrices(id, toSeconds(1, "hours"), startTime);
   }, [id, getHistoricalPrices, startTime]);
 
   console.log(prices);
 
   const status = useMemo(() => {
     if (enterIndex === undefined) {
-      return 'Waiting for entry';
+      return "Waiting for entry";
     }
     if (enterIndex >= 0 && stopLossHitIndex === undefined) {
-      return 'Entered';
+      return "Entered";
     }
     if (stopLossHitIndex >= 0) {
-      return 'Stoploss hit';
+      return "Stoploss hit";
     }
   }, [enterIndex, stopLossHitIndex]);
 
@@ -227,25 +227,25 @@ t2 $140   0.64 0.16 (20%)  20% profit   140 * 0.2 = $24
             <Fragment>
               {enterIndex !== undefined && (
                 <Paragraph>
-                  Enter at ${entryPrice} at{' '}
+                  Enter at ${entryPrice} at{" "}
                   {new Date(prices[enterIndex].time).toLocaleString()}
                 </Paragraph>
               )}
               {stopLossHitIndex !== undefined && (
                 <Paragraph>
-                  Stop loss hit{' '}
+                  Stop loss hit{" "}
                   {new Date(
-                    prices[stopLossHitIndex].startTime,
+                    prices[stopLossHitIndex].startTime
                   ).toLocaleString()}
                 </Paragraph>
               )}
               {targetHitIndices.length > 0 && (
                 <Paragraph>
-                  Reached target.. {targetHitIndices.length} at{' '}
+                  Reached target.. {targetHitIndices.length} at{" "}
                   {new Date(
                     prices[
                       targetHitIndices[targetHitIndices.length - 1]
-                    ].startTime,
+                    ].startTime
                   ).toLocaleString()}
                 </Paragraph>
               )}
@@ -260,7 +260,7 @@ t2 $140   0.64 0.16 (20%)  20% profit   140 * 0.2 = $24
                   : calcROI(
                       entryPrice,
                       prices[prices.length - 1].close,
-                      entryPrice,
+                      entryPrice
                     )}
                 %
               </Paragraph>

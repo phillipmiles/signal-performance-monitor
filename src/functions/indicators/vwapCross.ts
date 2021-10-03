@@ -7,13 +7,13 @@ export const vwapCross = (marketData: any[], vwapId: string): any[] => {
     if (index === 0) return current;
 
     const prev = marketData[index - 1];
-    console.log("LOOK FOR CROSS", prev[vwapId]);
+
     // const cross = calcCross(prev, current, shortRSIKey, longRSIKey);
     const cross = calcCross(
-      prev[vwapId],
       prev.close,
-      current[vwapId],
-      current.close
+      prev[vwapId],
+      current.close,
+      current[vwapId]
     );
 
     if (cross) {

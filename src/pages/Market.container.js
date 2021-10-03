@@ -25,21 +25,25 @@ import { findDataArrayMinimaMaxima } from "../functions/util/findMinimaMaxima";
 import { emaCross } from "../functions/indicators/emaCross";
 import { stochasticCross } from "../functions/indicators/stochasticCross";
 import { vwapCross } from "../functions/indicators/vwapCross";
+import { swingHigh, swingLow } from "../functions/indicators/swing";
+
 import {
   backTestMarketDataWithStrategy,
   calcProfitFromEvents,
 } from "../functions/strategies/backTest";
+import { backTestWithStrategy } from "../functions/strategies/backTestv2";
+
 import {
   calcLevelStrength,
   calcTrendLines,
 } from "../functions/analysis/calcTrendLines";
+import findPivotSupports from "../functions/analysis/findPivotSupports";
 
-// HPotter Pivot Points START
-
-const res = "daily";
-// Pivot point
-
-// HPotter Pivot Points END
+// new Date().getTime() - toMilliseconds(656, 'days'),
+// new Date().getTime() - toMilliseconds(307, 'days'),
+// new Date().getTime() - toMilliseconds(500, 'days'),
+// new Date().getTime() - toMilliseconds(300, "days"),
+const startTime = new Date().getTime() - toMilliseconds(20, "days");
 
 const momentumOffset = 2800;
 const period = 16;
@@ -168,6 +172,7 @@ const MarketContainer = () => {
   const [backTestBiggestGain, setBackTestBiggestGain] = useState();
   const [backTestBiggestLoss, setBackTestBiggestLoss] = useState();
   const [timeFrame, setTimeFrame] = useState("1d");
+  const [resolution, setResolution] = useState();
   const [isMarketsMenuOpen, setIsMarketsMenuOpen] = useState(false);
   const [
     backTestNumberProfitTrades,
@@ -282,104 +287,104 @@ const MarketContainer = () => {
   );
 
   useEffect(() => {
-    let resolution;
+    let newRes;
 
     if (timeFrame === "1w") {
-      resolution = toSeconds(1, "weeks");
+      newRes = toSeconds(1, "weeks");
     } else if (timeFrame === "1d") {
-      resolution = toSeconds(1, "days");
+      newRes = toSeconds(1, "days");
     } else if (timeFrame === "4h") {
-      resolution = toSeconds(4, "hours");
+      newRes = toSeconds(4, "hours");
     } else if (timeFrame === "1h") {
-      resolution = toSeconds(1, "hours");
+      newRes = toSeconds(1, "hours");
     } else if (timeFrame === "15m") {
-      resolution = toSeconds(15, "minutes");
+      newRes = toSeconds(15, "minutes");
     } else if (timeFrame === "5m") {
-      resolution = toSeconds(5, "minutes");
+      newRes = toSeconds(5, "minutes");
     }
 
-    setIsLoading(true);
-    getHistoricalPrices(
-      apiMarketId,
-      resolution,
-      // new Date().getTime() - toMilliseconds(656, 'days'),
-      // new Date().getTime() - toMilliseconds(307, 'days'),
-      // new Date().getTime() - toMilliseconds(500, 'days'),
-      // new Date().getTime() - toMilliseconds(300, "days"),
-      new Date().getTime() - toMilliseconds(10, "days")
-    );
-  }, [getHistoricalPrices, apiMarketId, timeFrame]);
+    setResolution(newRes);
+  }, [timeFrame]);
 
   useEffect(() => {
-    let calculatedData = calcDataArrayPP(
-      vwapCross(
-        calcDataArrayVWAP(
-          calcDataArrayMA(
-            calcDataArrayMA(
+    setIsLoading(true);
+    getHistoricalPrices(apiMarketId, resolution, startTime);
+  }, [getHistoricalPrices, apiMarketId, resolution]);
+
+  useEffect(() => {
+    let calculatedData = swingLow(
+      swingHigh(
+        calcDataArrayPP(
+          vwapCross(
+            calcDataArrayVWAP(
               calcDataArrayMA(
-                stochasticCross(
-                  emaCross(
-                    fullSTO(
-                      rsiCalculator(
-                        calcDataArrayMomentum(
-                          calcDataArrayMomentum(
-                            emaLong(
-                              // calcDataArrayDirectionExtremes(
-                              calcDataArraySmooth(
-                                // calcDataArraySmoothAvg(
-                                emaDouble(emaShort(marketData)),
-                                //   period / 2,
-                                //   ['high', 'low'],
-                                //   'smoothAvg',
-                                // ),
+                calcDataArrayMA(
+                  calcDataArrayMA(
+                    stochasticCross(
+                      emaCross(
+                        fullSTO(
+                          rsiCalculator(
+                            calcDataArrayMomentum(
+                              calcDataArrayMomentum(
+                                emaLong(
+                                  // calcDataArrayDirectionExtremes(
+                                  calcDataArraySmooth(
+                                    // calcDataArraySmoothAvg(
+                                    emaDouble(emaShort(marketData)),
+                                    //   period / 2,
+                                    //   ['high', 'low'],
+                                    //   'smoothAvg',
+                                    // ),
+                                    period / 2,
+                                    "close",
+                                    "smooth"
+                                  )
+                                  //   10,
+                                  //   '',
+                                  //   'high',
+                                  //   'low',
+                                  //   // 'smooth',
+                                  //   'smoothDirectionExtremes',
+                                  // ),
+                                ),
                                 period / 2,
-                                "close",
-                                "smooth"
-                              )
-                              //   10,
-                              //   '',
-                              //   'high',
-                              //   'low',
-                              //   // 'smooth',
-                              //   'smoothDirectionExtremes',
-                              // ),
-                            ),
-                            period / 2,
-                            "smooth", // USE smooth OR emaDouble
-                            "momentum1"
-                          ),
-                          period / 2,
-                          "momentum1",
-                          "momentum2"
-                        )
-                      )
+                                "smooth", // USE smooth OR emaDouble
+                                "momentum1"
+                              ),
+                              period / 2,
+                              "momentum1",
+                              "momentum2"
+                            )
+                          )
+                        ),
+                        "emaShort",
+                        "emaLong"
+                      ),
+                      "fullSTO",
+                      "fullSTO"
                     ),
-                    "emaShort",
-                    "emaLong"
+                    20,
+                    "close",
+                    "ma20"
                   ),
-                  "fullSTO",
-                  "fullSTO"
+                  100,
+                  "close",
+                  "ma100"
                 ),
-                20,
+                200,
                 "close",
-                "ma20"
+                "ma200"
               ),
-              100,
-              "close",
-              "ma100"
+              "volume",
+              "close"
             ),
-            200,
-            "close",
-            "ma200"
+            "vwap"
           ),
-          "volume",
-          "close"
-        ),
-        "vwap"
-      ),
-      dailyMarketData,
-      toMilliseconds(1, "days"),
-      "pp"
+          dailyMarketData,
+          toMilliseconds(1, "days"),
+          "pp"
+        )
+      )
     );
 
     console.log("DATA", calculatedData);
@@ -587,16 +592,82 @@ const MarketContainer = () => {
         });
       });
 
-      setTrends([...chartRays, ...linesToSave]);
+      // const supports = findPivotSupports(marketData);
+      const swings = [];
+      calculatedData.forEach((current, index) => {
+        if (current.indicators) {
+          const swingHigh = current.indicators.find(
+            (indicator) => indicator.id === "swingHigh"
+          );
+          const swingLow = current.indicators.find(
+            (indicator) => indicator.id === "swingLow"
+          );
+
+          console.log(current, swingHigh, swingLow);
+
+          if (swingHigh) {
+            swings.push({
+              type: "LINE",
+              selected: false,
+              start: [index, current.high],
+              end: [index + 1, current.high],
+              appearance: {
+                edgeFill: "#FFFFFF",
+                edgeStroke: "#AAFFAA",
+                edgeStrokeWidth: 1,
+                r: 6,
+                strokeDasharray: "Solid",
+                strokeStyle: "red",
+                strokeWidth: 1,
+              },
+            });
+          }
+          if (swingLow) {
+            swings.push({
+              type: "LINE",
+              selected: false,
+              start: [index, current.low],
+              end: [index + 1, current.low],
+              appearance: {
+                edgeFill: "#FFFFFF",
+                edgeStroke: "#AAAAFF",
+                edgeStrokeWidth: 1,
+                r: 6,
+                strokeDasharray: "Solid",
+                strokeStyle: "#AAAAFF",
+                strokeWidth: 1,
+              },
+            });
+          }
+        }
+      });
+
+      console.log("SWINGs", swings);
+
+      setTrends([
+        //...chartRays, ...linesToSave,
+        ...swings,
+      ]);
     }
   }, [marketData]);
 
-  const handleRunBackTest = useCallback(() => {
-    const events = backTestMarketDataWithStrategy(
-      marketData,
-      "emaCrossStrategy"
-      // 'emaCrossRetraceToMaStrategy',
-    );
+  const handleRunBackTest = useCallback(async () => {
+    // const events = backTestMarketDataWithStrategy(
+    //   marketData,
+    //   "emaCrossStrategy"
+    //   // 'emaCrossRetraceToMaStrategy',
+    // );
+    const runBackTest = async () =>
+      await backTestWithStrategy(
+        apiMarketId,
+        "emperorVwapStrategy",
+        resolution,
+        startTime
+        // endTime
+      );
+
+    const events = await runBackTest();
+
     console.log("events", events);
     const profit = calcProfitFromEvents(events);
     console.log("PROFIT", profit);
@@ -657,7 +728,7 @@ const MarketContainer = () => {
     setBackTestBiggestLoss(profit.biggestLoss);
     setBackTestNumberProfitTrades(profit.numberProfitTrades);
     setBackTestNumberLossTrades(profit.numberLossTrades);
-  }, [marketData, calculatedMarketData]);
+  }, [calculatedMarketData, resolution, marketId]);
 
   const toggleIndicatorsSettingsPanel = useCallback(() => {
     if (isBackTestPanelVisible) setIsBackTestPanelVisible(false);
@@ -722,7 +793,7 @@ const MarketContainer = () => {
       isIndicatorsSettingsPanelVisible={isIndicatorsSettingsPanelVisible}
       toggleIndicatorsSettingsPanel={toggleIndicatorsSettingsPanel}
       backTestBiggestGain={backTestBiggestGain && backTestBiggestGain.value}
-      backTestBiggestLoss={backTestBiggestGain && backTestBiggestLoss.value}
+      backTestBiggestLoss={backTestBiggestLoss && backTestBiggestLoss.value}
       backTestNumberProfitTrades={backTestNumberProfitTrades}
       backTestNumberLossTrades={backTestNumberLossTrades}
       numBackTestEntries={backTestEvents.reduce(

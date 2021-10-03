@@ -218,7 +218,13 @@ export const calcDataArrayPP = (
   res: number,
   id?: string
 ): any[] => {
-  if (!dataArray || !dataArray[dataArray.length - 1]) return dataArray;
+  if (
+    !dataArray ||
+    !dataArray[dataArray.length - 1] ||
+    !dailyDataArray ||
+    dailyDataArray.length <= 0
+  )
+    return dataArray;
 
   // If resolution matches or is smaller then the resolution of the data array then abort.
   // Can only calculate with a resolution smaller then that of the dataArrays.

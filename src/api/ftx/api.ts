@@ -1,7 +1,7 @@
-import axios, { AxiosResponse, AxiosError } from 'axios';
-import { Market } from '../../types/types';
-import env from '../../../env';
-import { toSeconds } from '../../util/time';
+import axios, { AxiosResponse, AxiosError } from "axios";
+import { Market } from "../../types/types";
+import env from "../../../env";
+import { toSeconds } from "../../util/time";
 // XXX Caution. There are issues with extending Error.
 // https://stackoverflow.com/questions/41102060/typescript-extending-error-class
 class ApiError extends Error {
@@ -45,14 +45,14 @@ const createAxiosError = (axiosError: AxiosError) => {
 const callApi = async (apiCall: () => Promise<AxiosResponse>): Promise<any> => {
   let response;
   try {
-    console.log('call it');
+    console.log("call it");
     response = await apiCall();
   } catch (error) {
     // / XXXX If error code is whatever unauthorised is then
     // reattempt call a few times before throwing error.
     throw createAxiosError(error);
   }
-  console.log('res?? ', response);
+  console.log("res?? ", response);
   return response.data.result;
 };
 
@@ -79,29 +79,19 @@ const getHistoricalPrices = async (
   marketId: string,
   resolution: number,
   start_time: number,
-  end_time: number,
+  end_time: number
 ) => {
-  console.log('H:OWEGKJRW:EOFI', end_time);
   const response = await axios.get(
     `http://localhost:3000/markets/${marketId}/candles`,
     {
       params: {
-        end_time: end_time ? toSeconds(end_time, 'milliseconds') : undefined,
-        start_time: toSeconds(start_time, 'milliseconds'),
+        end_time: end_time ? toSeconds(end_time, "milliseconds") : undefined,
+        start_time: toSeconds(start_time, "milliseconds"),
         resolution: resolution,
         limit: 5000,
       },
-    },
+    }
   );
-  // const response = await axios.get(
-  //   `http://localhost:3000/markets/${marketId}/candles`,
-  //   {
-  //     params: {
-  //       start_time: toSeconds(start_time, 'milliseconds'),
-  //       resolution: resolution,
-  //     },
-  //   },
-  // );
   return response;
 };
 
@@ -110,7 +100,7 @@ const getMarkets = async (): Promise<Market[]> =>
 
 const getMarket = async (marketId: string): Promise<Market> => {
   const response = await axios.get(
-    `${env.FTX_API_ENDPOINT}/markets/${marketId}`,
+    `${env.FTX_API_ENDPOINT}/markets/${marketId}`
   );
 
   return response.data.result;
